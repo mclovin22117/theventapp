@@ -117,9 +117,9 @@ export default function ProfileScreen() {
         return;
       }
 
-      // TODO: Replace with your Cloudinary cloud name & unsigned preset
+      // Cloudinary upload configuration
       const CLOUDINARY_UPLOAD_URL = 'https://api.cloudinary.com/v1_1/dycn1rw2e/image/upload';
-      const UPLOAD_PRESET = 'thevent-profile-pics';
+      const UPLOAD_PRESET = 'thevent-profiles-v2';
 
       const mime = asset.mimeType || 'image/jpeg';
       const dataUrl = `data:${mime};base64,${asset.base64}`;

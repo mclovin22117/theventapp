@@ -1,7 +1,25 @@
 The Vent
 This is a simple, anonymous thought-sharing app built for a small community.
 
--- Our Mission --
+## 📱 Download & Install
+
+### For Android Users:
+1. **Download the APK**: Go to the [Releases](https://github.com/reetik-rana/theventapp/releases) page
+2. **Find the latest release** and download the `.apk` file
+3. **Install the APK**:
+   - Open the downloaded APK file on your Android device
+   - If prompted, enable "Install from Unknown Sources" in your device settings
+   - Follow the on-screen instructions to complete the installation
+   
+> **Note**: You may need to allow installation from unknown sources in your device settings. This is safe as the APK is built directly from this project.
+
+### System Requirements:
+- Android 5.0 (Lollipop) or higher
+- Internet connection for authentication and posting
+
+---
+
+## -- Our Mission --
 The Vent provides a space for users to share their thoughts, feelings, and opinions openly and honestly, without the pressure of a public identity. Our goal is to foster a supportive environment where authenticity is encouraged.
 
 -- Key Features --
@@ -18,5 +36,33 @@ Data Storage: When a post is created, it is associated with your unique User ID 
 
 Transparency: While your identity is kept private from other users, anyone with administrative access to the app's backend can view a post's User ID and link it to the corresponding user account. We do not use this information to track or identify individual users.
 
-[How to Contribute]
+---
+
+## 🔧 How to Contribute
 If you're interested in contributing to the project, feel free to give your feedback and suggestions.
+
+## 📦 Building from Source
+If you'd like to build the app yourself:
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/reetik-rana/theventapp.git
+   cd theventapp
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+3. **Build for Android**:
+   ```bash
+   npm run android:build
+   # or
+   eas build --platform android
+   ```
+
+4. **Run in development**:
+   ```bash
+   npx expo start
+   ```

@@ -12,8 +12,7 @@ import ViewUserProfile from './screens/ViewUserProfile';
 
 import HomeScreen from './screens/HomeScreen';
 import PostScreen from './screens/PostScreen';
-import AboutScreen from './screens/AboutScreen';
-import ProfileScreen from './screens/ProfileScreen';
+import SettingsScreen from './screens/SettingsScreen';
 import AuthScreen from './screens/AuthScreen';
 import SplashScreen from './screens/SplashScreen';
 import PostDetailsScreen from './screens/PostDetailsScreen';
@@ -44,10 +43,6 @@ function MainTabs() {
             iconName = focused ? 'home' : 'home-outline';
           } else if (route.name === 'Post') {
             iconName = focused ? 'add-circle' : 'add-circle-outline';
-          } else if (route.name === 'About') {
-            iconName = focused ? 'information-circle' : 'information-circle-outline';
-          } else if (route.name === 'Profile') {
-            iconName = focused ? 'person' : 'person-outline';
           }
 
           return <Ionicons name={iconName} size={size} color={tabIconColor} />;
@@ -77,8 +72,6 @@ function MainTabs() {
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Post" component={PostScreen} />
-      <Tab.Screen name="About" component={AboutScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
 }
@@ -89,6 +82,11 @@ function AppNavigator() {
       <Stack.Screen
         name="MainAppTabs"
         component={MainTabs}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Settings"
+        component={SettingsScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen

@@ -39,6 +39,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 const isWeb = Platform.OS === 'web';
 const numColumns = isWeb ? 3 : 2;
 
+// Create animated FlatList for native driver support
+const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
+
 // Recursively count all replies and their nested replies
 const countRepliesRecursively = async (repliesRef) => {
 	let count = 0;
@@ -674,7 +677,7 @@ const HomeScreen = () => {
 				{/* Spacer for header + filter/search */}
 				<View style={{ height: isWeb ? 140 : Math.max(insets.top, 12) + 120 }} />
 				<View style={[isWeb && styles.webContentWrapper, !isWeb && styles.contentWrapper]}>
-					<FlatList
+					<AnimatedFlatList
 						data={searchedPosts}
 						renderItem={renderItem}
 						keyExtractor={(item) => item.id}
@@ -684,6 +687,38 @@ const HomeScreen = () => {
 						updateCellsBatchingPeriod={50}
 						initialNumToRender={10}
 						windowSize={10}
+						onScroll={Animated.event(
+							[{ nativeEvent: { contentOffset: { y: scrollY } } }],
+							{
+								useNativeDriver: true,
+								listener: (event) => {
+									const currentScrollY = event.nativeEvent.contentOffset.y;
+									const diff = currentScrollY - lastScrollY.current;
+
+									// More decisive animation - hide/show immediately when scrolling
+									if (diff > 3 && currentScrollY > 80 && isHeaderVisible) {
+										// Scrolling down - hide header quickly
+										setIsHeaderVisible(false);
+										Animated.timing(headerTranslateY, {
+											toValue: -150,
+											duration: 150,
+											useNativeDriver: true,
+										}).start();
+									} else if (diff < -3 && !isHeaderVisible) {
+										// Scrolling up - show header quickly
+										setIsHeaderVisible(true);
+										Animated.timing(headerTranslateY, {
+											toValue: 0,
+											duration: 150,
+											useNativeDriver: true,
+										}).start();
+									}
+
+									lastScrollY.current = currentScrollY;
+								},
+							}
+						)}
+						scrollEventThrottle={16}
 					/>
 				</View>
 				{/* Category Selection Modal */}

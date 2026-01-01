@@ -1,11 +1,22 @@
 // components/Header.js
 import React from 'react';
-import { View, Text, StyleSheet, Platform, SafeAreaView, Image } from 'react-native';
+import { View, Text, StyleSheet, Platform, SafeAreaView, Image, TouchableOpacity } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
+import { Ionicons } from '@expo/vector-icons';
 
 import AppLogo from '../assets/ventlogo.png';
 
-const Header = ({ showLogo = true, logoSource = AppLogo, tagline, headerBgColor, headerTextColor, taglineFontSize, centerTagline }) => {
+const Header = ({ 
+  showLogo = true, 
+  logoSource = AppLogo, 
+  tagline, 
+  headerBgColor, 
+  headerTextColor, 
+  taglineFontSize, 
+  centerTagline,
+  showMenu = false,
+  onMenuPress 
+}) => {
   const { colors } = useTheme();
 
   const currentHeaderBg = headerBgColor || colors.primary;
@@ -33,6 +44,15 @@ const Header = ({ showLogo = true, logoSource = AppLogo, tagline, headerBgColor,
         ]}>
           {tagline && <Text style={[styles.prominentTagline, { color: currentHeaderTextColor, fontSize: currentTaglineFontSize }]}>{tagline}</Text>}
         </View>
+        {showMenu && onMenuPress && (
+          <TouchableOpacity 
+            onPress={onMenuPress}
+            style={styles.menuButton}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name="menu" size={28} color="orange" />
+          </TouchableOpacity>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -89,6 +109,10 @@ const styles = StyleSheet.create({
       default: 'center', // Keep centered on mobile
     }),
     marginTop: 0,
+  },
+  menuButton: {
+    padding: 8,
+    marginLeft: 8,
   },
 });
 

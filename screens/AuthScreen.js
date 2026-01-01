@@ -15,7 +15,6 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 
 export default function AuthScreen() {
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
@@ -32,9 +31,14 @@ export default function AuthScreen() {
           setLoading(false);
           return;
         }
-        await register(email, password, username);
+        if (!password.trim() || password.length < 6) {
+          Alert.alert('Error', 'Password must be at least 6 characters.');
+          setLoading(false);
+          return;
+        }
+        await register(username, password);
       } else {
-        await login(email, password);
+        await login(username, password);
       }
     } catch (error) {
       console.error('Auth error:', error.message);
@@ -55,21 +59,12 @@ export default function AuthScreen() {
         </Text>
 
         {isRegistering && (
-          <TextInput
-            style={[
-              styles.input,
-              {
-                backgroundColor: colors.card,
-                color: colors.text,
-                borderColor: colors.border
-              }
-            ]}
-            placeholder="Username" // This is the correct username input
-            placeholderTextColor={colors.placeholder}
-            value={username}
-            onChangeText={setUsername}
-            autoCapitalize="none"
-          />
+          <View style={styles.warningContainer}>
+            <Text style={[styles.warningIcon, { color: colors.notification }]}>⚠️</Text>
+            <Text style={[styles.warningText, { color: colors.notification }]}>
+              ATTENTION: Keep your username and password safe! No email is stored, and accounts cannot be recovered if you forget your credentials.
+            </Text>
+          </View>
         )}
 
         <TextInput
@@ -81,11 +76,10 @@ export default function AuthScreen() {
               borderColor: colors.border
             }
           ]}
-          placeholder="Email"
+          placeholder="Username"
           placeholderTextColor={colors.placeholder}
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
+          value={username}
+          onChangeText={setUsername}
           autoCapitalize="none"
         />
 
@@ -98,7 +92,7 @@ export default function AuthScreen() {
               borderColor: colors.border
             }
           ]}
-          placeholder="Password"
+          placeholder="Password (min 6 characters)"
           placeholderTextColor={colors.placeholder}
           value={password}
           onChangeText={setPassword}
@@ -146,6 +140,27 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 10,
     alignItems: 'center',
+  },
+  warningContainer: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255, 152, 0, 0.1)',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 152, 0, 0.3)',
+    alignItems: 'flex-start',
+  },
+  warningIcon: {
+    fontSize: 20,
+    marginRight: 8,
+    marginTop: 2,
+  },
+  warningText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '500',
   },
   title: {
     fontSize: 28,

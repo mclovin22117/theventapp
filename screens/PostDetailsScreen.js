@@ -4,7 +4,6 @@ import {
   StyleSheet,
   View,
   Text,
-  SafeAreaView,
   ActivityIndicator,
   FlatList,
   TextInput,
@@ -16,6 +15,7 @@ import {
   Linking,
   Image
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { db } from '../firebaseConfig';
 import {

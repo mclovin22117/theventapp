@@ -6,7 +6,6 @@ import {
 	Text,
 	FlatList,
 	ActivityIndicator,
-	SafeAreaView,
 	Alert,
 	TouchableOpacity,
 	Platform,
@@ -17,6 +16,7 @@ import {
 	Image,
 	Animated,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Header from '../components/Header';
 import { db } from '../firebaseConfig';
 import {
@@ -392,155 +392,37 @@ const HomeScreen = () => {
 		const effectiveAnonymous = item.anonymousId || cached?.anonymousId || '🙂';
 
 		return (
-			<View
+			<TouchableOpacity
+				onPress={() => navigation.navigate('PostDetails', { postId: item.id })}
 				style={[
-					styles.postItem,
-					isWeb && styles.webPostItem,
-					{ backgroundColor: colors.card, borderColor: colors.border }
+					styles.whatsappPostItem,
+					{ backgroundColor: colors.background, borderBottomColor: colors.border }
 				]}
 			>
-				<View style={[styles.postHeader, { gap: 8 }]}>
-					{effectiveProfilePic ? (
-						<TouchableOpacity onPress={() => setModalPic(effectiveProfilePic)}>
-							<Image source={{ uri: effectiveProfilePic }} style={{ width: 40, height: 40, borderRadius: 20 }} />
-						</TouchableOpacity>
-					) : (
-						<View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#444', alignItems: 'center', justifyContent: 'center' }}>
-							<Text style={{ fontSize: 18 }}>{effectiveAnonymous}</Text>
+				{effectiveProfilePic ? (
+					<TouchableOpacity onPress={() => setModalPic(effectiveProfilePic)}>
+						<Image source={{ uri: effectiveProfilePic }} style={styles.whatsappAvatar} />
+					</TouchableOpacity>
+				) : (
+					<View style={styles.whatsappAvatarPlaceholder}>
+						<Text style={{ fontSize: 20 }}>{effectiveAnonymous}</Text>
+					</View>
+				)}
+				<View style={{ flex: 1 }}>
+					<View style={styles.whatsappPostTop}>
+						<Text style={[styles.whatsappUsername, { color: colors.text }]} numberOfLines={1}>{item.username}</Text>
+						<Text style={[styles.whatsappTime, { color: colors.placeholder }]}>{new Date(item.createdAt?.toDate()).toLocaleDateString()}</Text>
+					</View>
+					<Text style={[styles.whatsappMessage, { color: colors.placeholder }]} numberOfLines={2}>{item.text}</Text>
+					{item.tag && (
+						<View style={[styles.whatsappTag, { borderColor: '#075E54' }]}>
+							<Text style={[styles.whatsappTagText, { color: '#075E54' }]}>{item.tag}</Text>
 						</View>
 					)}
-					<View style={{ flex: 1 }}>
-						<Text style={[styles.postAuthor, { color: colors.primary }]}>{item.username}</Text>
-						<View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
-							{effectiveProfilePic && (
-								<Text style={{ fontSize: 12, color: colors.placeholder }}>{effectiveAnonymous}</Text>
-							)}
-							{item.tag && (
-								<View style={[
-									styles.tagContainer,
-									{ borderColor: colors.primary, marginLeft: effectiveProfilePic ? 6 : 0 }
-								]}>
-									<Text style={[styles.tagText, { color: colors.primary }]}>{item.tag}</Text>
-								</View>
-							)}
-						</View>
-					</View>
 				</View>
-				{renderTruncatedText(item.text, styles.postText)}
-				{/* Render preview for supported services */}
-				{firstUrl && preview && (
-					<TouchableOpacity
-						onPress={() => Linking.openURL(firstUrl)}
-						style={{ marginTop: 8, alignSelf: 'stretch' }}
-						activeOpacity={0.85}
-					>
-						<View style={{
-							flexDirection: 'row',
-							alignItems: 'center',
-							backgroundColor: isWeb ? '#222' : colors.background,
-							borderRadius: 8,
-							borderWidth: 1,
-							borderColor: colors.border,
-							padding: 8,
-							marginHorizontal: 0,
-							maxWidth: '100%',
-							overflow: 'hidden',
-							shadowColor: '#000',
-							shadowOffset: { width: 0, height: 1 },
-							shadowOpacity: 0.08,
-							shadowRadius: 2,
-							elevation: 1,
-						}}>
-							<Image
-								source={{ uri: thumbnail }}
-								style={{ width: 48, height: 48, borderRadius: 8, marginRight: 12, backgroundColor: '#fff' }}
-								resizeMode="cover"
-							/>
-							<View style={{ flex: 1, minWidth: 0 }}>
-								<Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 15, marginBottom: 2 }}>
-									{preview.title}
-								</Text>
-								<Text
-									style={{
-										color: colors.placeholder,
-										fontSize: 12,
-										textDecorationLine: 'underline',
-										maxWidth: '100%',
-									}}
-									numberOfLines={1}
-									ellipsizeMode="middle"
-								>
-									{truncateUrl(firstUrl)}
-								</Text>
-							</View>
-						</View>
-					</TouchableOpacity>
-				)}
-				{/* If not supported, just show the link */}
-				{firstUrl && !preview && (
-					<TouchableOpacity onPress={() => Linking.openURL(firstUrl)} style={{ marginTop: 8 }}>
-						<Text
-							style={{
-								color: '#1e90ff',
-								textDecorationLine: 'underline',
-								fontSize: 13,
-								maxWidth: '100%',
-							}}
-							numberOfLines={1}
-							ellipsizeMode="middle"
-						>
-							{truncateUrl(firstUrl)}
-						</Text>
-					</TouchableOpacity>
-				)}
-				<View style={styles.postFooter}>
-					{item.createdAt && (
-						<Text style={[styles.postTimestamp, { color: colors.placeholder }]}>
-							{new Date(item.createdAt.toDate()).toLocaleString()}
-						</Text>
-					)}
-					<View style={styles.actionButtonsContainer}>
-						<TouchableOpacity
-							onPress={(event) => {
-								event.stopPropagation();
-								if (hasLiked) {
-									handleUnlike(item.id);
-								} else {
-									handleLike(item.id, item.userId);
-								}
-							}}
-							style={styles.actionButton}
-							disabled={buttonDisabled}
-						>
-							<Text style={[styles.actionButtonText, { color: hasLiked ? 'red' : colors.text }]}>
-								❤️ {likeCount}
-							</Text>
-						</TouchableOpacity>
-
-						<TouchableOpacity
-							onPress={(event) => {
-								event.stopPropagation();
-								navigation.navigate('PostDetails', { postId: item.id });
-							}}
-							style={styles.actionButton}
-							disabled={false}
-						>
-							<Text style={[styles.actionButtonText, { color: colors.text }]}>
-								💬 {replyCount}
-							</Text>
-						</TouchableOpacity>
-					</View>
-				</View>
-				{/* Make the post details navigation button explicit */}
-				<TouchableOpacity
-					style={{ marginTop: 8, alignSelf: 'flex-start' }}
-					onPress={() => navigation.navigate('PostDetails', { postId: item.id })}
-				>
-					<Text style={{ color: colors.primary, fontWeight: 'bold' }}>View Full</Text>
-				</TouchableOpacity>
-			</View>
+			</TouchableOpacity>
 		);
-	}, [postActivityStatus, currentUser, selectedCategory, searchText, colors, ogImages, userProfileCache, navigation, handleLike, handleUnlike, setModalPic]);
+	}, [postActivityStatus, userProfileCache, colors, navigation, setModalPic]);
 
 	const searchedPosts = useMemo(() => {
 		const filtered = posts.filter(post => selectedCategory === 'All' || post.tag === selectedCategory);
@@ -559,123 +441,51 @@ const HomeScreen = () => {
 		);
 	}
 
-	// Collapsible header interpolations
-	const HEADER_SCROLL_DISTANCE = 100;
-	
-	const headerHeight = scrollY.interpolate({
-		inputRange: [0, HEADER_SCROLL_DISTANCE],
-		outputRange: [60, 0],
-		extrapolate: 'clamp',
-	});
-
-	const headerOpacity = scrollY.interpolate({
-		inputRange: [0, HEADER_SCROLL_DISTANCE / 2, HEADER_SCROLL_DISTANCE],
-		outputRange: [1, 0.5, 0],
-		extrapolate: 'clamp',
-	});
-
-	const filterSearchHeight = scrollY.interpolate({
-		inputRange: [0, HEADER_SCROLL_DISTANCE],
-		outputRange: [60, 0],
-		extrapolate: 'clamp',
-	});
-
-	const filterSearchOpacity = scrollY.interpolate({
-		inputRange: [0, HEADER_SCROLL_DISTANCE / 2, HEADER_SCROLL_DISTANCE],
-		outputRange: [1, 0.5, 0],
-		extrapolate: 'clamp',
-	});
-
 	return (
 		<SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
 			<View style={{ flex: 1 }}>
-				{/* Collapsible Header with Filter/Search */}
-				<Animated.View
-					style={{
-						position: 'absolute',
-						top: 0,
-						left: 0,
-						right: 0,
-						zIndex: 1000,
-						backgroundColor: colors.background,
-					}}
-				>
-					<View style={{ height: isWeb ? 8 : Math.max(insets.top, 12) }} />
-					
-					{/* Collapsible Header Section */}
-					<Animated.View
-						style={{
-							height: headerHeight,
-							opacity: headerOpacity,
-							overflow: 'hidden',
-						}}
-					>
-						<Header
-							tagline="We listen and We don't judge"
-							headerBgColor="black"
-							headerTextColor="white"
-							taglineFontSize={20}
-							showLogo={false}
-							centerTagline={true}
-							showMenu={true}
-							onMenuPress={() => navigation.navigate('Settings')}
-						/>
-					</Animated.View>
-					
-					{/* Collapsible Filter and search section */}
-					<Animated.View
-						style={{
-							height: filterSearchHeight,
-							opacity: filterSearchOpacity,
-							overflow: 'hidden',
-						}}
-					>
-						<View style={[styles.topBarContainer, isWeb && styles.webTopBarContainer, { backgroundColor: colors.background }]}>
-						<View style={[
-							styles.filterContainer,
-							{ borderColor: colors.border, flex: 0.55, marginBottom: 0 },
-							isWeb && styles.webFilterContainer
-						]}>
-							<Text style={[styles.filterLabel, { color: colors.text }]}>Filter by:</Text>
-							<TouchableOpacity
-								style={[styles.filterButton, { borderColor: colors.border, backgroundColor: colors.card }]}
-								onPress={() => setShowCategoryModal(true)}
-							>
-								<Text style={[styles.filterButtonText, { color: colors.text }]}>
-									{selectedCategory}
-								</Text>
-								<Ionicons name="caret-down" size={16} color={colors.text} style={styles.dropdownIcon} />
-							</TouchableOpacity>
-						</View>
-						<View style={[
-							styles.searchContainer,
-							{
-								borderColor: colors.border,
-								backgroundColor: colors.card,
-								flex: 0.45,
-								margin: 0,
-								marginLeft: 0,
-							},
-							isWeb && styles.webSearchContainer
-						]}>
-							<Ionicons name="search" size={20} color={colors.placeholder} style={styles.searchIcon} />
-							<TextInput
-								style={[styles.searchInput, { color: colors.text }]}
-								placeholder="Search feed"
-								placeholderTextColor={colors.placeholder}
-								value={searchText}
-								onChangeText={setSearchText}
-							/>
-						</View>
+				{/* WhatsApp-style header */}
+				<View style={{ backgroundColor: '#075E54', paddingTop: Math.max(insets.top, 12) }}>
+					<View style={styles.whatsappHeader}>
+						<Text style={styles.whatsappTitle}>The Vent</Text>
+						<TouchableOpacity onPress={() => navigation.navigate('Settings')} style={styles.menuIconButton}>
+							<Ionicons name="menu" size={24} color="white" />
+						</TouchableOpacity>
 					</View>
-				</Animated.View>
-				</Animated.View>
+					<Text style={styles.whatsappSubtitle}>We listen and We don't judge</Text>
+				</View>
 
-				{/* Spacer for header + filter/search */}
-				<View style={{ height: isWeb ? 140 : Math.max(insets.top, 12) + 120 }} />
-				<View style={[isWeb && styles.webContentWrapper, !isWeb && styles.contentWrapper]}>
+				{/* Search bar */}
+				<View style={[styles.searchBarContainer, { backgroundColor: colors.background }]}>
+					<View style={[styles.searchInputWrapper, { backgroundColor: colors.card, borderColor: colors.border }]}>
+						<Ionicons name="search" size={20} color={colors.placeholder} />
+						<TextInput
+							style={[styles.searchInputField, { color: colors.text }]}
+							placeholder="Search posts..."
+							placeholderTextColor={colors.placeholder}
+							value={searchText}
+							onChangeText={setSearchText}
+						/>
+					</View>
+				</View>
+
+				{/* Filter bar */}
+				<View style={[styles.filterBarContainer, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+					<Text style={[styles.filterLabel, { color: colors.text }]}>Filter:</Text>
+					<TouchableOpacity
+						style={[styles.filterChip, { backgroundColor: colors.card, borderColor: colors.border }]}
+						onPress={() => setShowCategoryModal(true)}
+					>
+						<Text style={[styles.filterChipText, { color: colors.text }]}>{selectedCategory}</Text>
+						<Ionicons name="chevron-down" size={16} color={colors.text} />
+					</TouchableOpacity>
+				</View>
+
+				{/* Posts list */}
+				<View style={{ flex: 1 }}>
 					<FlatList
 						data={searchedPosts}
+
 						renderItem={renderItem}
 						keyExtractor={(item) => item.id}
 						contentContainerStyle={isWeb ? styles.webListContentContainer : styles.listContentContainer}
@@ -1016,6 +826,117 @@ const styles = StyleSheet.create({
 	},
 	noPostsText: {
 		fontSize: 18,
+	},
+	// WhatsApp-style components
+	whatsappHeader: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		alignItems: 'center',
+		paddingHorizontal: 16,
+		paddingVertical: 8,
+	},
+	whatsappTitle: {
+		fontSize: 19,
+		fontWeight: 'bold',
+		color: 'white',
+	},
+	whatsappSubtitle: {
+		fontSize: 12,
+		color: '#E0E0E0',
+		paddingHorizontal: 16,
+		paddingBottom: 8,
+	},
+	menuIconButton: {
+		padding: 8,
+	},
+	searchBarContainer: {
+		paddingHorizontal: 12,
+		paddingVertical: 6,
+	},
+	searchInputWrapper: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		borderRadius: 20,
+		paddingHorizontal: 12,
+		paddingVertical: 6,
+		borderWidth: 1,
+	},
+	searchInputField: {
+		flex: 1,
+		marginLeft: 8,
+		fontSize: 14,
+	},
+	filterBarContainer: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		paddingHorizontal: 16,
+		paddingVertical: 8,
+		borderBottomWidth: 1,
+	},
+	filterChip: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		paddingHorizontal: 12,
+		paddingVertical: 6,
+		borderRadius: 16,
+		marginLeft: 8,
+		borderWidth: 1,
+	},
+	filterChipText: {
+		marginRight: 4,
+		fontSize: 14,
+	},
+	whatsappPostItem: {
+		paddingHorizontal: 16,
+		paddingVertical: 10,
+		borderBottomWidth: 1,
+	},
+	whatsappPostHeader: {
+		flexDirection: 'row',
+		alignItems: 'flex-start',
+		gap: 12,
+	},
+	whatsappAvatar: {
+		width: 50,
+		height: 50,
+		borderRadius: 25,
+	},
+	whatsappAvatarPlaceholder: {
+		width: 50,
+		height: 50,
+		borderRadius: 25,
+		backgroundColor: '#444',
+		alignItems: 'center',
+		justifyContent: 'center',
+	},
+	whatsappPostTop: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		marginBottom: 4,
+	},
+	whatsappUsername: {
+		fontSize: 16,
+		fontWeight: '600',
+		flex: 1,
+	},
+	whatsappTime: {
+		fontSize: 12,
+	},
+	whatsappMessage: {
+		fontSize: 14,
+		lineHeight: 20,
+	},
+	whatsappTag: {
+		marginTop: 6,
+		paddingHorizontal: 8,
+		paddingVertical: 3,
+		borderRadius: 10,
+		borderWidth: 1,
+		alignSelf: 'flex-start',
+	},
+	whatsappTagText: {
+		fontSize: 11,
+		fontWeight: '600',
 	},
 });
 

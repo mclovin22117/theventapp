@@ -6,11 +6,11 @@ import {
   Text,
   FlatList,
   ActivityIndicator,
-  SafeAreaView,
   Alert,
   TouchableOpacity,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Header from '../components/Header';
 import { db } from '../firebaseConfig';
 import {

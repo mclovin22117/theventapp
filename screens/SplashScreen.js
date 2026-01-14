@@ -1,6 +1,7 @@
 // screens/SplashScreen.js
 import React from 'react';
-import { View, StyleSheet, SafeAreaView, Image, Text } from 'react-native';
+import { View, StyleSheet, Image, Text } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import AppLogo from '../assets/ventlogo.png';
 

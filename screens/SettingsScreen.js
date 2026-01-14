@@ -1,6 +1,7 @@
 // screens/SettingsScreen.js
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Switch, Alert, SafeAreaView, TouchableOpacity, Linking, ScrollView, Platform, Image } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Switch, Alert, TouchableOpacity, Linking, ScrollView, Platform, Image } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import Header from '../components/Header';

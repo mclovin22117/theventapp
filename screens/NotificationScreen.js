@@ -107,7 +107,7 @@ const NotificationScreen = () => {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <Header
         tagline="Your Notifications"
-        headerBgColor="black"
+        headerBgColor="#075E54"
         headerTextColor="white"
         taglineFontSize={20}
         showLogo={false}

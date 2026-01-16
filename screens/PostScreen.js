@@ -96,7 +96,7 @@ const PostScreen = ({ navigation }) => {
         <View style={{ height: Platform.OS === 'web' ? 8 : Math.max(insets.top, 12) }} />
         <Header
           tagline="Share what's on your mind"
-          headerBgColor="black"
+          headerBgColor="#075E54"
           headerTextColor="white"
           taglineFontSize={20}
           showLogo={false}
@@ -144,7 +144,7 @@ const PostScreen = ({ navigation }) => {
                 <TouchableOpacity
                   style={[
                     styles.postButton,
-                    { backgroundColor: colors.primary },
+                    { backgroundColor: '#075E54' },
                     (!thoughtText.trim() || isPosting) && styles.disabledButton
                   ]}
                   onPress={handlePost}

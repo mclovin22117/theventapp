@@ -191,7 +191,7 @@ export default function SettingsScreen() {
         <View style={{ height: Platform.OS === 'web' ? 8 : Math.max(insets.top, 12) }} />
         
         {/* Header with Back Button */}
-        <View style={[styles.headerWithBack, { backgroundColor: 'black' }]}>
+        <View style={[styles.headerWithBack, { backgroundColor: '#075E54' }]}>
           <TouchableOpacity 
             onPress={() => navigation.goBack()}
             style={styles.backButton}
@@ -218,7 +218,7 @@ export default function SettingsScreen() {
                   <Ionicons name="person" size={50} color={colors.placeholder} />
                 </View>
               )}
-              <TouchableOpacity onPress={pickAndUpload} style={[styles.uploadButton, { backgroundColor: colors.primary }]}>
+              <TouchableOpacity onPress={pickAndUpload} style={[styles.uploadButton, { backgroundColor: '#075E54' }]}>
                 <Text style={styles.uploadButtonText}>
                   {profilePic ? 'Change Picture' : 'Upload Picture'}
                 </Text>
@@ -227,7 +227,7 @@ export default function SettingsScreen() {
 
             <View style={styles.infoRow}>
               <Text style={[styles.label, { color: colors.text }]}>Username:</Text>
-              <Text style={[styles.value, { color: colors.primary }]}>{appUser.username}</Text>
+              <Text style={[styles.value, { color: '#075E54' }]}>{appUser.username}</Text>
             </View>
 
             <View style={styles.settingRow}>
@@ -240,7 +240,7 @@ export default function SettingsScreen() {
               <Switch
                 value={publicProfile}
                 onValueChange={handleTogglePublicProfile}
-                trackColor={{ false: colors.border, true: colors.primary }}
+                trackColor={{ false: colors.border, true: '#075E54' }}
                 thumbColor={publicProfile ? colors.card : colors.placeholder}
               />
             </View>
@@ -255,7 +255,7 @@ export default function SettingsScreen() {
               <Switch
                 value={isDarkMode}
                 onValueChange={toggleTheme}
-                trackColor={{ false: colors.border, true: colors.primary }}
+                trackColor={{ false: colors.border, true: '#075E54' }}
                 thumbColor={isDarkMode ? colors.card : colors.placeholder}
               />
             </View>
@@ -276,7 +276,7 @@ export default function SettingsScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.button, { backgroundColor: colors.primary }]}
+              style={[styles.button, { backgroundColor: '#075E54' }]}
               onPress={() => navigation.navigate('UserPosts', { userId: currentUser.uid })}
             >
               <Text style={styles.buttonText}>View My Posts</Text>
@@ -290,7 +290,7 @@ export default function SettingsScreen() {
           {/* About Section */}
           <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Image source={require('../assets/ventlogo.png')} style={styles.logo} />
-            <Text style={[styles.appTitle, { color: colors.text }]}>The Vent</Text>
+            {/* <Text style={[styles.appTitle, { color: colors.text }]}>The Vent</Text> */}
             <Text style={[styles.version, { color: colors.placeholder }]}>Version {APP_VERSION}</Text>
 
             <View style={styles.aboutSection}>
@@ -329,14 +329,14 @@ export default function SettingsScreen() {
               <Text style={[styles.aboutTitle, { color: colors.text }]}>Contact & Feedback</Text>
               <Text style={[styles.paragraph, { color: colors.text }]}>
                 Have suggestions or need support? Reach out at{' '}
-                <Text style={{ fontWeight: 'bold', color: colors.primary }} onPress={handleContactPress}>
+                <Text style={{ fontWeight: 'bold', color: '#075E54' }} onPress={handleContactPress}>
                   {ADMIN_EMAIL}
                 </Text>.
               </Text>
             </View>
 
             <TouchableOpacity
-              style={[styles.button, { backgroundColor: colors.primary, marginTop: 16 }]}
+              style={[styles.button, { backgroundColor: '#075E54', marginTop: 16 }]}
               onPress={handleUpdateApp}
             >
               <Text style={styles.buttonText}>Check for Updates</Text>

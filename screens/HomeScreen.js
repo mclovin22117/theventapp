@@ -445,11 +445,11 @@ const HomeScreen = () => {
 		<SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
 			<View style={{ flex: 1 }}>
 				{/* WhatsApp-style header */}
-				<View style={{ backgroundColor: '#075E54', paddingTop: Math.max(insets.top, 12) }}>
+				<View style={{ backgroundColor: '#075E54', paddingTop: 0 }}>
 					<View style={styles.whatsappHeader}>
 						<Text style={styles.whatsappTitle}>The Vent</Text>
 						<TouchableOpacity onPress={() => navigation.navigate('Settings')} style={styles.menuIconButton}>
-							<Ionicons name="menu" size={24} color="white" />
+							<Ionicons name="menu" size={30} color="white" />
 						</TouchableOpacity>
 					</View>
 					<Text style={styles.whatsappSubtitle}>We listen and We don't judge</Text>
@@ -833,7 +833,7 @@ const styles = StyleSheet.create({
 		justifyContent: 'space-between',
 		alignItems: 'center',
 		paddingHorizontal: 16,
-		paddingVertical: 8,
+		paddingVertical: 2,
 	},
 	whatsappTitle: {
 		fontSize: 19,
@@ -844,21 +844,22 @@ const styles = StyleSheet.create({
 		fontSize: 12,
 		color: '#E0E0E0',
 		paddingHorizontal: 16,
-		paddingBottom: 8,
+		paddingTop: 2,
+		paddingBottom: 4,
 	},
 	menuIconButton: {
 		padding: 8,
 	},
 	searchBarContainer: {
-		paddingHorizontal: 12,
-		paddingVertical: 6,
+		paddingHorizontal: 10,
+		paddingVertical: 4,
 	},
 	searchInputWrapper: {
 		flexDirection: 'row',
 		alignItems: 'center',
 		borderRadius: 20,
-		paddingHorizontal: 12,
-		paddingVertical: 6,
+		paddingHorizontal: 10,
+		paddingVertical: 2,
 		borderWidth: 1,
 	},
 	searchInputField: {
@@ -870,7 +871,7 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		alignItems: 'center',
 		paddingHorizontal: 16,
-		paddingVertical: 8,
+		paddingVertical: 4,
 		borderBottomWidth: 1,
 	},
 	filterChip: {

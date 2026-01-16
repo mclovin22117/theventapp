@@ -118,7 +118,7 @@ const ViewUserProfileScreen = ({ route }) => {
   if (!user || user.publicProfile === false) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }}>
-        <Header tagline="User Profile" headerBgColor="black" headerTextColor="white" taglineFontSize={20} showLogo={false} />
+        <Header tagline="User Profile" headerBgColor="#075E54" headerTextColor="white" taglineFontSize={20} showLogo={false} />
         <Text style={{ color: colors.text, fontSize: 18, marginTop: 20 }}>This profile is private.</Text>
       </SafeAreaView>
     );

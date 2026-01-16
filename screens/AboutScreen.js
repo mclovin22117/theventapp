@@ -29,7 +29,7 @@ const AboutScreen = () => {
         <View style={{ height: Platform.OS === 'web' ? 8 : Math.max(insets.top, 12) }} />
         <Header
           tagline="About The Vent"
-          headerBgColor="black"
+          headerBgColor="#075E54"
           headerTextColor="white"
           taglineFontSize={20}
           showLogo={false}

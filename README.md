@@ -1,7 +1,22 @@
 The Vent
 This is a simple, anonymous thought-sharing app built for a small community.
 
-## 📱 Download & Install
+## � Screenshots
+
+<div align="center">
+  <img src="screenshots/home.png" alt="Home Feed" width="250"/>
+  <img src="screenshots/post.png" alt="Create Post" width="250"/>
+  <img src="screenshots/details.png" alt="Post Details" width="250"/>
+</div>
+
+**Key Features Shown:**
+- **Anonymous Feed**: Browse thoughts shared by the community with WhatsApp-style interface
+- **Easy Posting**: Share your thoughts with category tags
+- **Engage & Reply**: Like and comment on posts anonymously
+
+---
+
+## �📱 Download & Install
 
 ### For Android Users:
 1. **Download the APK**: Go to the [Releases](https://github.com/reetik-rana/theventapp/releases) page

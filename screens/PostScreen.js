@@ -90,13 +90,13 @@ const PostScreen = ({ navigation }) => {
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={{ flex: 1 }}>
+    <SafeAreaView style={[styles.container, { backgroundColor: '#1f1f1f' }]}>
+      <View style={{ flex: 1, backgroundColor: '#1f1f1f' }}>
         {/* safe-area spacer to avoid touching top on mobile */}
-        <View style={{ height: Platform.OS === 'web' ? 8 : Math.max(insets.top, 12) }} />
+        <View style={{ height: Platform.OS === 'web' ? 5 : Math.max(insets.top, 10) }} />
         <Header
           tagline="Share what's on your mind"
-          headerBgColor="#075E54"
+          headerBgColor="#1f1f1f"
           headerTextColor="white"
           taglineFontSize={20}
           showLogo={false}
@@ -144,7 +144,7 @@ const PostScreen = ({ navigation }) => {
                 <TouchableOpacity
                   style={[
                     styles.postButton,
-                    { backgroundColor: '#075E54' },
+                    { backgroundColor: '#1f1f1f' },
                     (!thoughtText.trim() || isPosting) && styles.disabledButton
                   ]}
                   onPress={handlePost}

@@ -187,11 +187,11 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={{ flex: 1 }}>
+      <View style={Platform.OS === 'web' ? styles.webWrapper : { flex: 1 }}>
         <View style={{ height: Platform.OS === 'web' ? 8 : Math.max(insets.top, 12) }} />
         
         {/* Header with Back Button */}
-        <View style={[styles.headerWithBack, { backgroundColor: '#075E54' }]}>
+        <View style={[styles.headerWithBack, { backgroundColor: '#1f1f1f' }]}>
           <TouchableOpacity 
             onPress={() => navigation.goBack()}
             style={styles.backButton}
@@ -205,7 +205,11 @@ export default function SettingsScreen() {
         
         <View style={{ height: Platform.OS === 'web' ? 10 : 8 }} />
         
-        <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: 32 }}>
+        <ScrollView 
+          style={styles.scrollView} 
+          contentContainerStyle={{ paddingBottom: 32 }}
+          showsVerticalScrollIndicator={Platform.OS === 'web'}
+        >
           {/* Profile Section */}
           <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Profile</Text>
@@ -218,7 +222,7 @@ export default function SettingsScreen() {
                   <Ionicons name="person" size={50} color={colors.placeholder} />
                 </View>
               )}
-              <TouchableOpacity onPress={pickAndUpload} style={[styles.uploadButton, { backgroundColor: '#075E54' }]}>
+              <TouchableOpacity onPress={pickAndUpload} style={[styles.uploadButton, { backgroundColor: '#1f1f1f' }]}>
                 <Text style={styles.uploadButtonText}>
                   {profilePic ? 'Change Picture' : 'Upload Picture'}
                 </Text>
@@ -227,7 +231,7 @@ export default function SettingsScreen() {
 
             <View style={styles.infoRow}>
               <Text style={[styles.label, { color: colors.text }]}>Username:</Text>
-              <Text style={[styles.value, { color: '#075E54' }]}>{appUser.username}</Text>
+              <Text style={[styles.value, { color: '#ffffff' }]}>{appUser.username}</Text>
             </View>
 
             <View style={styles.settingRow}>
@@ -240,7 +244,7 @@ export default function SettingsScreen() {
               <Switch
                 value={publicProfile}
                 onValueChange={handleTogglePublicProfile}
-                trackColor={{ false: colors.border, true: '#075E54' }}
+                trackColor={{ false: colors.border, true: '#888888' }}
                 thumbColor={publicProfile ? colors.card : colors.placeholder}
               />
             </View>
@@ -255,7 +259,7 @@ export default function SettingsScreen() {
               <Switch
                 value={isDarkMode}
                 onValueChange={toggleTheme}
-                trackColor={{ false: colors.border, true: '#075E54' }}
+                trackColor={{ false: colors.border, true: '#888888' }}
                 thumbColor={isDarkMode ? colors.card : colors.placeholder}
               />
             </View>
@@ -276,7 +280,7 @@ export default function SettingsScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.button, { backgroundColor: '#075E54' }]}
+              style={[styles.button, { backgroundColor: '#1f1f1f' }]}
               onPress={() => navigation.navigate('UserPosts', { userId: currentUser.uid })}
             >
               <Text style={styles.buttonText}>View My Posts</Text>
@@ -329,14 +333,14 @@ export default function SettingsScreen() {
               <Text style={[styles.aboutTitle, { color: colors.text }]}>Contact & Feedback</Text>
               <Text style={[styles.paragraph, { color: colors.text }]}>
                 Have suggestions or need support? Reach out at{' '}
-                <Text style={{ fontWeight: 'bold', color: '#075E54' }} onPress={handleContactPress}>
+                <Text style={{ fontWeight: 'bold', color: '#e0e0e0' }} onPress={handleContactPress}>
                   {ADMIN_EMAIL}
                 </Text>.
               </Text>
             </View>
 
             <TouchableOpacity
-              style={[styles.button, { backgroundColor: '#075E54', marginTop: 16 }]}
+              style={[styles.button, { backgroundColor: '#1f1f1f', marginTop: 16 }]}
               onPress={handleUpdateApp}
             >
               <Text style={styles.buttonText}>Check for Updates</Text>
@@ -349,7 +353,7 @@ export default function SettingsScreen() {
               <Text style={[styles.buttonText, { color: colors.text }]}>View on GitHub</Text>
             </TouchableOpacity>
 
-            <Text style={[styles.footer, { color: colors.placeholder }]}>Made with ❤️ by a Tech Enthusiast</Text>
+            <Text style={[styles.footer, { color: colors.placeholder }]}>Mclovin without a last name</Text>
           </View>
         </ScrollView>
       </View>
@@ -360,6 +364,11 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  webWrapper: {
+    height: '100vh',
+    display: 'flex',
+    flexDirection: 'column',
   },
   loadingContainer: {
     flex: 1,
@@ -392,6 +401,12 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
     paddingHorizontal: 16,
+    ...Platform.select({
+      web: {
+        overflowY: 'scroll',
+        height: '100%',
+      },
+    }),
   },
   section: {
     padding: 20,

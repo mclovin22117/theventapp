@@ -6,7 +6,7 @@ import { NavigationContainer, CommonActions } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Updates from 'expo-updates'; // NEW: Import Expo Updates
 import ViewUserProfile from './screens/ViewUserProfile';
 
@@ -52,11 +52,10 @@ function MainTabs() {
         tabBarStyle: Platform.select({
           web: {
             width: '100%',
-            maxWidth: 1000,
-            alignSelf: 'center',
             backgroundColor: colors.card,
             paddingBottom: 10,
             height: 70,
+            justifyContent: 'center',
           },
           default: {
             backgroundColor: colors.card,
@@ -115,11 +114,13 @@ function AppNavigator() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <ThemeProvider>
-        <AppContent />
-      </ThemeProvider>
-    </AuthProvider>
+    <SafeAreaProvider>
+      <AuthProvider>
+        <ThemeProvider>
+          <AppContent />
+        </ThemeProvider>
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }
 

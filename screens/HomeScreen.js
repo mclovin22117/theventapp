@@ -415,8 +415,8 @@ const HomeScreen = () => {
 					</View>
 					<Text style={[styles.whatsappMessage, { color: colors.placeholder }]} numberOfLines={2}>{item.text}</Text>
 					{item.tag && (
-						<View style={[styles.whatsappTag, { borderColor: '#075E54' }]}>
-							<Text style={[styles.whatsappTagText, { color: '#075E54' }]}>{item.tag}</Text>
+						<View style={[styles.whatsappTag, { borderColor: '#888888' }]}>
+							<Text style={[styles.whatsappTagText, { color: '#888888' }]}>{item.tag}</Text>
 						</View>
 					)}
 				</View>
@@ -445,7 +445,7 @@ const HomeScreen = () => {
 		<SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
 			<View style={{ flex: 1 }}>
 				{/* WhatsApp-style header */}
-				<View style={{ backgroundColor: '#075E54', paddingTop: 0 }}>
+				<View style={{ backgroundColor: '#1f1f1f', paddingTop: 0 }}>
 					<View style={styles.whatsappHeader}>
 						<Text style={styles.whatsappTitle}>The Vent</Text>
 						<TouchableOpacity onPress={() => navigation.navigate('Settings')} style={styles.menuIconButton}>
@@ -601,17 +601,14 @@ const styles = StyleSheet.create({
 		paddingBottom: 24,
 	},
 	listContentContainer: {
-		padding: 20,
+		paddingBottom: 20,
 	},
 	webListContentContainer: {
-		display: 'flex',
-		flexDirection: 'row',
-		flexWrap: 'wrap',
-		gap: 32,
-		justifyContent: 'center',
-		alignItems: 'flex-start',
-		padding: 32,
-		minHeight: '80vh',
+		paddingHorizontal: 0,
+		paddingVertical: 20,
+		alignSelf: 'center',
+		width: '100%',
+		maxWidth: 800,
 	},
 	postItem: Platform.select({
 		web: {
@@ -853,14 +850,16 @@ const styles = StyleSheet.create({
 	searchBarContainer: {
 		paddingHorizontal: 10,
 		paddingVertical: 4,
+		alignItems: 'flex-start',
 	},
 	searchInputWrapper: {
 		flexDirection: 'row',
 		alignItems: 'center',
 		borderRadius: 20,
 		paddingHorizontal: 10,
-		paddingVertical: 2,
+		paddingVertical: 4,
 		borderWidth: 1,
+		width: Platform.OS === 'web' ? 400 : '90%',
 	},
 	searchInputField: {
 		flex: 1,
@@ -891,6 +890,15 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 16,
 		paddingVertical: 10,
 		borderBottomWidth: 1,
+		...Platform.select({
+			web: {
+				marginBottom: 10,
+				borderRadius: 8,
+				borderWidth: 1,
+				borderBottomWidth: 1,
+				boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+			},
+		}),
 	},
 	whatsappPostHeader: {
 		flexDirection: 'row',

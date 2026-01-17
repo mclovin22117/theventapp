@@ -428,7 +428,7 @@ const PostDetailsScreen = () => {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* header that respects safe-area insets */}
-      <View style={[styles.header, { backgroundColor: '#075E54', paddingTop: (insets.top || 12) + 6, paddingBottom: 12 }]}>
+      <View style={[styles.header, { backgroundColor: '#1f1f1f', paddingTop: (insets.top || 12) + 6, paddingBottom: 12 }]}>
         <Text style={[styles.headerTitle, { color: 'white' }]}>Post Details</Text>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
@@ -587,7 +587,7 @@ const PostDetailsScreen = () => {
                 style={[
                   styles.replyButton, 
                   { 
-                    backgroundColor: replyText.trim() && !isReplying ? '#075E54' : colors.border 
+                    backgroundColor: replyText.trim() && !isReplying ? '#1f1f1f' : colors.border 
                   }
                 ]}
                 onPress={handleAddReply}

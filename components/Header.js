@@ -43,7 +43,7 @@ const Header = ({
           !showLogo && styles.textContainerNoLogo,
           centerTagline && styles.textContainerCentered,
         ]}>
-          {tagline && <Text style={[styles.prominentTagline, { color: currentHeaderTextColor, fontSize: currentTaglineFontSize }]}>{tagline}</Text>}
+          {tagline && <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.prominentTagline, { color: currentHeaderTextColor, fontSize: currentTaglineFontSize }]}>{tagline}</Text>}
         </View>
         {showMenu && onMenuPress && (
           <TouchableOpacity 
@@ -78,11 +78,8 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   headerContainerNoLogo: {
-    justifyContent: Platform.select({
-      web: 'center', // Align to the center on web
-      default: 'center', // Keep centered on mobile
-    }),
-    paddingVertical: 10 + (Platform.OS === 'android' ? 10 : 0),
+    justifyContent: 'center',
+    paddingVertical: 6,
     paddingHorizontal: 10,
   },
   logo: {
@@ -94,7 +91,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   textContainerNoLogo: {
-    flex: 0,
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -105,10 +102,7 @@ const styles = StyleSheet.create({
   },
   prominentTagline: {
     fontWeight: 'bold',
-    textAlign: Platform.select({
-      web: 'left', // Align text to the left on web
-      default: 'center', // Keep centered on mobile
-    }),
+    textAlign: 'center',
     marginTop: 0,
   },
   menuButton: {

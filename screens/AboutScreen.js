@@ -6,7 +6,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 
-const APP_VERSION = '1.3.0';
+const APP_VERSION = '1.3.1';
 const ADMIN_EMAIL = 'capsprout2001@proton.me';
 const GITHUB_URL = 'https://github.com/reetik-rana/theventapp';
 
@@ -29,7 +29,7 @@ const AboutScreen = () => {
         <View style={{ height: Platform.OS === 'web' ? 8 : Math.max(insets.top, 12) }} />
         <Header
           tagline="About The Vent"
-          headerBgColor="#075E54"
+          headerBgColor="#1f1f1f"
           headerTextColor="white"
           taglineFontSize={20}
           showLogo={false}

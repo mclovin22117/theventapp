@@ -266,7 +266,7 @@ const UserPostsScreen = () => {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <Header
         tagline="Your Posts"
-        headerBgColor="#075E54"
+        headerBgColor="#1f1f1f"
         headerTextColor="white"
         taglineFontSize={20}
         showLogo={false}

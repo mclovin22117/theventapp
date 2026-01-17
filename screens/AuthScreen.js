@@ -100,7 +100,7 @@ export default function AuthScreen() {
         />
 
         <TouchableOpacity
-          style={[styles.button, { backgroundColor: '#075E54' }]}
+          style={[styles.button, { backgroundColor: '#1f1f1f' }]}
           onPress={handleAuth}
           disabled={loading}
         >

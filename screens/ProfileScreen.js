@@ -169,7 +169,7 @@ export default function ProfileScreen() {
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <Header
           tagline="Login to see your info"
-          headerBgColor="#075E54"
+          headerBgColor="#1f1f1f"
           headerTextColor="white"
           taglineFontSize={16}
           showLogo={false}
@@ -188,7 +188,7 @@ export default function ProfileScreen() {
       <View style={{ height: Platform.OS === 'web' ? 8 : Math.max(insets.top, 12) }} />
       <Header
         tagline="Manage your account"
-        headerBgColor="#075E54"
+        headerBgColor="#1f1f1f"
         headerTextColor="white"
         taglineFontSize={20}
         showLogo={false}

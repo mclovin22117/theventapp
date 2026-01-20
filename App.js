@@ -3,7 +3,6 @@ import 'react-native-gesture-handler';
 import React, { useState, useEffect } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet, Platform, Alert } from 'react-native';
 import { NavigationContainer, CommonActions } from '@react-navigation/native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -25,62 +24,20 @@ import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { navigationRef } from './navigation/RootNavigation';
 
 
-const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 const RootStack = createStackNavigator();
-
-function MainTabs() {
-  const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
-
-  return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color: tabIconColor, size }) => {
-          let iconName;
-
-          if (route.name === 'Home') {
-            iconName = focused ? 'home' : 'home-outline';
-          } else if (route.name === 'Post') {
-            iconName = focused ? 'add-circle' : 'add-circle-outline';
-          }
-
-          return <Ionicons name={iconName} size={size} color={tabIconColor} />;
-        },
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.text,
-        tabBarStyle: Platform.select({
-          web: {
-            width: '100%',
-            backgroundColor: colors.card,
-            paddingBottom: 10,
-            height: 70,
-            justifyContent: 'center',
-          },
-          default: {
-            backgroundColor: colors.card,
-            paddingBottom: 5 + insets.bottom,
-            height: 50 + insets.bottom,
-          },
-        }),
-        tabBarLabelStyle: {
-          fontSize: 12,
-        },
-        headerShown: false,
-      })}
-    >
-      <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Post" component={PostScreen} />
-    </Tab.Navigator>
-  );
-}
 
 function AppNavigator() {
   return (
     <Stack.Navigator>
       <Stack.Screen
-        name="MainAppTabs"
-        component={MainTabs}
+        name="Home"
+        component={HomeScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Post"
+        component={PostScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen

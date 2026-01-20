@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, ActivityIndicator, StyleSheet, SafeAreaView, Alert, Platform, Image, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, ActivityIndicator, StyleSheet, Alert, Platform, Image, ScrollView, RefreshControl } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { db } from '../firebaseConfig';
 import { doc, getDoc, onSnapshot, collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';

@@ -1,7 +1,6 @@
 // components/Header.js
 import React from 'react';
 import { View, Text, StyleSheet, Platform, Image, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -25,89 +24,59 @@ const Header = ({
   const currentTaglineFontSize = taglineFontSize || 20;
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: currentHeaderBg }]}>
-      <View style={[
-        styles.headerContainer,
-        !showLogo && styles.headerContainerNoLogo,
-        { backgroundColor: currentHeaderBg }
-      ]}>
-        {showLogo && logoSource && (
-          <Image
-            source={logoSource}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-        )}
-        <View style={[
-          styles.textContainer,
-          !showLogo && styles.textContainerNoLogo,
-          centerTagline && styles.textContainerCentered,
-        ]}>
-          {tagline && <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.prominentTagline, { color: currentHeaderTextColor, fontSize: currentTaglineFontSize }]}>{tagline}</Text>}
-        </View>
-        {showMenu && onMenuPress && (
-          <TouchableOpacity 
-            onPress={onMenuPress}
-            style={styles.menuButton}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Ionicons name="menu" size={28} color="orange" />
-          </TouchableOpacity>
+    <View style={[styles.headerContainer, { backgroundColor: currentHeaderBg }]}>
+      {showLogo && logoSource && (
+        <Image
+          source={logoSource}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+      )}
+      <View style={styles.textContainer}>
+        {tagline && (
+          <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.taglineText, { color: currentHeaderTextColor, fontSize: currentTaglineFontSize }]}>
+            {tagline}
+          </Text>
         )}
       </View>
-    </SafeAreaView>
+      {showMenu && onMenuPress && (
+        <TouchableOpacity 
+          onPress={onMenuPress}
+          style={styles.menuButton}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons name="menu" size={24} color={currentHeaderTextColor} />
+        </TouchableOpacity>
+      )}
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    paddingTop: Platform.OS === 'android' ? 20 : 0,
-    backgroundColor: 'transparent',
-  },
   headerContainer: {
-    width: '100%',
-    padding: 10,
-    paddingTop: Platform.OS === 'android' ? 0 : 0, 
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-start',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 1.5,
-    elevation: 3,
-  },
-  headerContainerNoLogo: {
-    justifyContent: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    height: 56,
   },
   logo: {
-    width: 40,
-    height: 40,
-    marginRight: 10,
+    width: 32,
+    height: 32,
+    marginRight: 12,
   },
   textContainer: {
     flex: 1,
-  },
-  textContainerNoLogo: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  textContainerCentered: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  prominentTagline: {
-    fontWeight: 'bold',
+  taglineText: {
+    fontWeight: '600',
     textAlign: 'center',
-    marginTop: 0,
   },
   menuButton: {
-    padding: 8,
-    marginLeft: 8,
+    padding: 4,
   },
 });
 

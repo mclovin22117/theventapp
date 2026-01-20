@@ -32,6 +32,7 @@ export const generateRandomId = () => {
     'Health',
     'Fitness',
     'Fashion',
-    'Other',
     'Song of the Day',
+    'Code',
+    'Other',
   ];

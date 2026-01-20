@@ -47,6 +47,10 @@ const ThoughtCard = ({ thought, onPress }) => {
       </View>
       <Text style={styles.thoughtText} numberOfLines={Platform.OS === 'web' ? 3 : 0} ellipsizeMode="tail">{thought.text}</Text>
       <View style={styles.footer}>
+        <TouchableOpacity style={styles.commentButton} onPress={handleCardPress}>
+          <Ionicons name="chatbubble-outline" size={18} color="#757575" />
+          <Text style={styles.commentCount}>{thought.commentsCount || 0}</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={styles.likeButton} onPress={handleLike} disabled={liked}>
           <Ionicons name={liked ? "heart" : "heart-outline"} size={18} color={liked ? "#e91e63" : "#757575"} />
           <Text style={[styles.likeCount, liked && styles.likedText]}>{likesCount}</Text>
@@ -99,7 +103,17 @@ const styles = StyleSheet.create({
   },
   footer: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
+  },
+  commentButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 4,
+  },
+  commentCount: {
+    marginLeft: 4,
+    fontSize: 14,
+    color: '#757575',
   },
   likeButton: {
     flexDirection: 'row',

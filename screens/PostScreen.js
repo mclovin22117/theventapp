@@ -8,13 +8,13 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   ActivityIndicator,
   Modal,
   FlatList,
   ScrollView,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import ThoughtInput from '../components/ThoughtInput';
 import Header from '../components/Header';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -94,13 +94,20 @@ const PostScreen = ({ navigation }) => {
       <View style={{ flex: 1, backgroundColor: '#1f1f1f' }}>
         {/* safe-area spacer to avoid touching top on mobile */}
         <View style={{ height: Platform.OS === 'web' ? 5 : Math.max(insets.top, 10) }} />
-        <Header
-          tagline="Share what's on your mind"
-          headerBgColor="#1f1f1f"
-          headerTextColor="white"
-          taglineFontSize={20}
-          showLogo={false}
-        />
+        
+        {/* Header with Back Button */}
+        <View style={[styles.headerWithBack, { backgroundColor: '#1f1f1f' }]}>
+          <TouchableOpacity 
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name="arrow-back" size={24} color="white" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Share what's on your mind</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        
         <View style={{ height: Platform.OS === 'web' ? 10 : 8 }} />
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -316,6 +323,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   postButton: {
+    backgroundColor: '#00796B',
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
@@ -332,6 +340,29 @@ const styles = StyleSheet.create({
         fontSize: 30,
       },
     }),
+  },
+  headerWithBack: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1.5,
+    elevation: 3,
+  },
+  backButton: {
+    padding: 8,
+    width: 40,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: 'white',
+    flex: 1,
+    textAlign: 'center',
   },
 });
 

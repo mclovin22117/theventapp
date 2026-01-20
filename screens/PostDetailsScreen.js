@@ -38,7 +38,7 @@ import { categories } from '../utils/helpers';
 
 // This recursive function fetches all replies and their nested replies
 const fetchRepliesRecursively = async (collectionRef) => {
-  const q = query(collectionRef, orderBy('createdAt', 'asc'));
+  const q = query(collectionRef, orderBy('createdAt', 'desc'));
   const querySnapshot = await getDocs(q);
   const replies = [];
 
@@ -107,28 +107,30 @@ const ReplyItem = ({ item, level, postId, onReplyPress }) => {
 
   return (
     <View style={[styles.replyItemContainer, { marginLeft: marginLeft, borderLeftColor: colors.border }]}>
-      <View style={[styles.replyItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4, gap: 8 }}>
-          {profilePic ? (
-            <Image source={{ uri: profilePic }} style={{ width: 32, height: 32, borderRadius: 16 }} />
-          ) : (
-            <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#444', alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ fontSize: 14 }}>{anonymousId}</Text>
-            </View>
-          )}
-          <Text style={[styles.replyAuthor, { color: colors.primary }]}>{item.username}</Text>
-        </View>
-        <Text style={[styles.replyText, { color: colors.text }]}>
-          {renderTextWithTags()}
-        </Text>
-        {item.createdAt && (
-          <Text style={[styles.replyTimestamp, { color: colors.placeholder }]}>
-            {new Date(item.createdAt.toDate()).toLocaleString()}
-          </Text>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 8 }}>
+        {profilePic ? (
+          <Image source={{ uri: profilePic }} style={{ width: 32, height: 32, borderRadius: 16 }} />
+        ) : (
+          <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#444', alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ fontSize: 14 }}>{anonymousId}</Text>
+          </View>
         )}
-        <TouchableOpacity onPress={() => onReplyPress(item)} style={styles.nestedReplyButton}>
+        <View style={{ flex: 1 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <Text style={[styles.replyAuthor, { color: colors.primary }]}>{item.username}</Text>
+            {item.createdAt && (
+              <Text style={[styles.replyTimestamp, { color: colors.placeholder }]}>
+                {new Date(item.createdAt.toDate()).toLocaleString()}
+              </Text>
+            )}
+          </View>
+          <Text style={[styles.replyText, { color: colors.text }]}>
+            {renderTextWithTags()}
+          </Text>
+          <TouchableOpacity onPress={() => onReplyPress(item)} style={styles.nestedReplyButton}>
             <Text style={[styles.nestedReplyButtonText, { color: colors.secondary }]}>Reply</Text>
-        </TouchableOpacity>
+          </TouchableOpacity>
+        </View>
       </View>
       {/* Recursively render nested replies */}
       {item.replies && item.replies.map(reply => (
@@ -720,35 +722,23 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   replyItemContainer: {
-    paddingVertical: 8,
     borderLeftWidth: 2,
     borderLeftColor: '#E0E0E0',
     paddingLeft: 10,
-    marginBottom: 8,
-  },
-  replyItem: {
-    borderRadius: 8,
-    padding: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 1,
-    elevation: 1,
-    borderWidth: 1,
+    paddingHorizontal: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
   },
   replyAuthor: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: 'bold',
-    marginBottom: 3,
   },
   replyText: {
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 14,
+    lineHeight: 20,
   },
   replyTimestamp: {
-    fontSize: 10,
-    marginTop: 5,
-    textAlign: 'right',
+    fontSize: 11,
   },
   replyInputContainer: {
     flexDirection: 'row',

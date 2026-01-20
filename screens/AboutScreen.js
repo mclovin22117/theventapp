@@ -1,6 +1,7 @@
 // screens/AboutScreen.js
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, Linking, Image, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Linking, Image, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Header from '../components/Header';
 import { useTheme } from '../context/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

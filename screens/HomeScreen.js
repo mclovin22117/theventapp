@@ -1,5 +1,5 @@
 // screens/HomeScreen.js
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react';
 import {
 	StyleSheet,
 	View,
@@ -153,6 +153,73 @@ const fetchOgImage = async (url) => {
 	}
 	return null;
 };
+
+// Memoized Post Item Component for better performance
+const PostItem = memo(({ 
+	item, 
+	activityStatus,
+	userProfileCache,
+	colors,
+	onPress,
+	onLikeToggle,
+	onProfilePicPress
+}) => {
+	const hasLiked = activityStatus?.isLiked || false;
+	const likeCount = activityStatus?.likeCount || 0;
+	const replyCount = activityStatus?.replyCount || 0;
+
+	const cached = userProfileCache[item.userId];
+	const effectiveProfilePic = cached?.profilePic || item.profilePic || null;
+	const effectiveAnonymous = item.anonymousId || cached?.anonymousId || '🙂';
+
+	return (
+		<TouchableOpacity
+			onPress={onPress}
+			style={[
+				styles.whatsappPostItem,
+				{ backgroundColor: colors.background, borderBottomColor: colors.border }
+			]}
+		>
+			{effectiveProfilePic ? (
+				<TouchableOpacity onPress={() => onProfilePicPress(effectiveProfilePic)}>
+					<Image source={{ uri: effectiveProfilePic }} style={styles.whatsappAvatar} />
+				</TouchableOpacity>
+			) : (
+				<View style={styles.whatsappAvatarPlaceholder}>
+					<Text style={{ fontSize: 20 }}>{effectiveAnonymous}</Text>
+				</View>
+			)}
+			<View style={{ flex: 1 }}>
+				<View style={styles.whatsappPostTop}>
+					<Text style={[styles.whatsappUsername, { color: colors.text }]} numberOfLines={1}>{item.username}</Text>
+					<Text style={[styles.whatsappTime, { color: colors.placeholder }]}>{new Date(item.createdAt?.toDate()).toLocaleDateString()}</Text>
+				</View>
+				<Text style={[styles.whatsappMessage, { color: colors.placeholder }]} numberOfLines={2}>{item.text}</Text>
+				{item.tag && (
+					<View style={[styles.whatsappTag, { borderColor: '#888888' }]}>
+						<Text style={[styles.whatsappTagText, { color: '#888888' }]}>{item.tag}</Text>
+					</View>
+				)}
+				<View style={styles.postActions}>
+					<TouchableOpacity 
+						style={styles.actionItem}
+						onPress={onPress}
+					>
+						<Ionicons name="chatbubble-outline" size={20} color={colors.placeholder} />
+						<Text style={[styles.actionCount, { color: colors.placeholder }]}>{replyCount}</Text>
+					</TouchableOpacity>
+					<TouchableOpacity 
+						style={styles.actionItem}
+						onPress={() => onLikeToggle(item.id, item.userId, hasLiked)}
+					>
+						<Ionicons name={hasLiked ? "heart" : "heart-outline"} size={20} color={hasLiked ? "#e91e63" : colors.placeholder} />
+						<Text style={[styles.actionCount, { color: hasLiked ? "#e91e63" : colors.placeholder }]}>{likeCount}</Text>
+					</TouchableOpacity>
+				</View>
+			</View>
+		</TouchableOpacity>
+	);
+});
 
 const HomeScreen = () => {
 	const [posts, setPosts] = useState([]);
@@ -339,90 +406,30 @@ const HomeScreen = () => {
 		}
 	}, [currentUser]);
 
+	const handleLikeToggle = useCallback((postId, postUserId, hasLiked) => {
+		if (hasLiked) {
+			handleUnlike(postId);
+		} else {
+			handleLike(postId, postUserId);
+		}
+	}, [handleLike, handleUnlike]);
+
 	const renderItem = useCallback(({ item }) => {
 		const activityStatus = postActivityStatus[item.id] || { isLiked: false, likeCount: 0, replyCount: 0 };
-		const hasLiked = activityStatus.isLiked;
-		const likeCount = activityStatus.likeCount;
-		const replyCount = activityStatus.replyCount;
-
-		const buttonDisabled = !currentUser || currentUser.uid === item.userId;
-
-		if (selectedCategory !== 'All' && item.tag !== selectedCategory) {
-			return null;
-		}
-		
-		// Search logic to conditionally render items
-		const searchTextLower = searchText.toLowerCase();
-		const postTextLower = item.text.toLowerCase();
-		const postAuthorLower = item.username.toLowerCase(); // NEW: Get username in lowercase
-		if (searchText && !postTextLower.includes(searchTextLower) && !postAuthorLower.includes(searchTextLower)) { // NEW: Check against username
-			return null;
-		}
-
-		// Extract first URL for preview
-		const firstUrl = extractFirstUrl(item.text);
-		const preview = firstUrl ? getLinkPreview(firstUrl) : null;
-
-		// Helper to truncate long URLs for display
-		const truncateUrl = (url, maxLength = 40) => {
-			if (url.length <= maxLength) return url;
-			return url.slice(0, maxLength - 3) + '...';
-		};
-
-		// Use OG image for Spotify if available
-		let thumbnail = preview ? preview.thumbnail : null;
-		if (preview && preview.type === 'spotify' && ogImages[firstUrl]) {
-			thumbnail = ogImages[firstUrl];
-		}
-
-		// Helper to truncate post text to 2 lines with ellipsis
-		const renderTruncatedText = (text, textStyle) => (
-			<Text
-				style={[textStyle, { color: colors.text }]}
-				numberOfLines={2}
-				ellipsizeMode="tail"
-			>
-				{text}
-			</Text>
-		);
-
-		// Get cached profilePic and anonymousId
-		const cached = userProfileCache[item.userId];
-		const effectiveProfilePic = cached?.profilePic || item.profilePic || null;
-		const effectiveAnonymous = item.anonymousId || cached?.anonymousId || '🙂';
 
 		return (
-			<TouchableOpacity
+			<PostItem
+				item={item}
+				activityStatus={activityStatus}
+				userProfileCache={userProfileCache}
+				colors={colors}
 				onPress={() => navigation.navigate('PostDetails', { postId: item.id })}
-				style={[
-					styles.whatsappPostItem,
-					{ backgroundColor: colors.background, borderBottomColor: colors.border }
-				]}
-			>
-				{effectiveProfilePic ? (
-					<TouchableOpacity onPress={() => setModalPic(effectiveProfilePic)}>
-						<Image source={{ uri: effectiveProfilePic }} style={styles.whatsappAvatar} />
-					</TouchableOpacity>
-				) : (
-					<View style={styles.whatsappAvatarPlaceholder}>
-						<Text style={{ fontSize: 20 }}>{effectiveAnonymous}</Text>
-					</View>
-				)}
-				<View style={{ flex: 1 }}>
-					<View style={styles.whatsappPostTop}>
-						<Text style={[styles.whatsappUsername, { color: colors.text }]} numberOfLines={1}>{item.username}</Text>
-						<Text style={[styles.whatsappTime, { color: colors.placeholder }]}>{new Date(item.createdAt?.toDate()).toLocaleDateString()}</Text>
-					</View>
-					<Text style={[styles.whatsappMessage, { color: colors.placeholder }]} numberOfLines={2}>{item.text}</Text>
-					{item.tag && (
-						<View style={[styles.whatsappTag, { borderColor: '#888888' }]}>
-							<Text style={[styles.whatsappTagText, { color: '#888888' }]}>{item.tag}</Text>
-						</View>
-					)}
-				</View>
-			</TouchableOpacity>
+				onLikeToggle={handleLikeToggle}
+				onProfilePicPress={setModalPic}
+			/>
 		);
-	}, [postActivityStatus, userProfileCache, colors, navigation, setModalPic]);
+	}, [postActivityStatus, userProfileCache, colors, navigation, handleLikeToggle]);
+
 
 	const searchedPosts = useMemo(() => {
 		const filtered = posts.filter(post => selectedCategory === 'All' || post.tag === selectedCategory);
@@ -441,19 +448,22 @@ const HomeScreen = () => {
 		);
 	}
 
+	const handleMenuPress = () => {
+		navigation.navigate('Settings');
+	};
+
 	return (
 		<SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
 			<View style={{ flex: 1 }}>
-				{/* WhatsApp-style header */}
-				<View style={{ backgroundColor: '#1f1f1f', paddingTop: 0 }}>
-					<View style={styles.whatsappHeader}>
-						<Text style={styles.whatsappTitle}>The Vent</Text>
-						<TouchableOpacity onPress={() => navigation.navigate('Settings')} style={styles.menuIconButton}>
-							<Ionicons name="menu" size={30} color="white" />
-						</TouchableOpacity>
-					</View>
-					<Text style={styles.whatsappSubtitle}>We listen and We don't judge</Text>
-				</View>
+				<Header
+					tagline="The Vent"
+					headerBgColor="#1f1f1f"
+					headerTextColor="white"
+					taglineFontSize={20}
+					showLogo={false}
+					showMenu={true}
+					onMenuPress={handleMenuPress}
+				/>
 
 				{/* Search bar */}
 				<View style={[styles.searchBarContainer, { backgroundColor: colors.background }]}>
@@ -485,15 +495,19 @@ const HomeScreen = () => {
 				<View style={{ flex: 1 }}>
 					<FlatList
 						data={searchedPosts}
-
 						renderItem={renderItem}
 						keyExtractor={(item) => item.id}
 						contentContainerStyle={isWeb ? styles.webListContentContainer : styles.listContentContainer}
 						removeClippedSubviews={true}
-						maxToRenderPerBatch={10}
-						updateCellsBatchingPeriod={50}
-						initialNumToRender={10}
-						windowSize={10}
+						maxToRenderPerBatch={5}
+						updateCellsBatchingPeriod={100}
+						initialNumToRender={8}
+						windowSize={5}
+						getItemLayout={(data, index) => ({
+							length: 120,
+							offset: 120 * index,
+							index,
+						})}
 					/>
 				</View>
 				{/* Category Selection Modal */}
@@ -571,6 +585,15 @@ const HomeScreen = () => {
 						<Text style={{ color: '#fff', marginTop: 18, fontSize: 14, opacity: 0.7 }}>Tap anywhere to close</Text>
 					</TouchableOpacity>
 				</Modal>
+
+				{/* Floating Action Button */}
+				<TouchableOpacity
+					style={[styles.fab, { backgroundColor: '#00796B' }]}
+					onPress={() => navigation.navigate('Post')}
+					activeOpacity={0.8}
+				>
+					<Ionicons name="leaf" size={28} color="#fff" />
+				</TouchableOpacity>
 			</View>
 		</SafeAreaView>
 	);
@@ -943,9 +966,44 @@ const styles = StyleSheet.create({
 		borderWidth: 1,
 		alignSelf: 'flex-start',
 	},
+	fab: {
+		position: 'absolute',
+		right: 20,
+		bottom: 20,
+		width: 60,
+		height: 60,
+		borderRadius: 30,
+		justifyContent: 'center',
+		alignItems: 'center',
+		elevation: 8,
+		shadowColor: '#000',
+		shadowOffset: { width: 0, height: 4 },
+		shadowOpacity: 0.3,
+		shadowRadius: 5,
+		...Platform.select({
+			web: {
+				boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+			},
+		}),
+	},
 	whatsappTagText: {
 		fontSize: 11,
 		fontWeight: '600',
+	},
+	postActions: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		marginTop: 8,
+		paddingTop: 8,
+	},
+	actionItem: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: 4,
+	},
+	actionCount: {
+		fontSize: 13,
+		marginLeft: 4,
 	},
 });
 

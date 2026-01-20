@@ -101,11 +101,26 @@ export const AuthProvider = ({ children }) => {
 
       await setDoc(doc(db, 'users', firebaseUser.uid), userData);
 
+      // User is now automatically logged in via onAuthStateChanged
       return { user: firebaseUser, username: username };
     } catch (err) {
-      console.error('Registration error:', err); // Log as Registration error
-      setError(err.message);
-      throw err;
+      console.error('Registration error:', err);
+      
+      let errorMessage = 'Registration failed';
+      if (err.message.includes('already taken')) {
+        errorMessage = err.message;
+      } else if (err.code === 'auth/email-already-in-use') {
+        errorMessage = 'Username is already taken. Please choose another.';
+      } else if (err.code === 'auth/weak-password') {
+        errorMessage = 'Password must be at least 6 characters.';
+      } else if (err.code === 'auth/network-request-failed') {
+        errorMessage = 'Network error. Please check your connection.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
+      throw new Error(errorMessage);
     } finally {
       setLoading(false);
     }

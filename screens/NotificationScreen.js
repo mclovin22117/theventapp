@@ -24,6 +24,7 @@ import {
 } from 'firebase/firestore';
 import Header from '../components/Header';
 import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 
 const NotificationScreen = () => {
   const [notifications, setNotifications] = useState([]);
@@ -105,14 +106,22 @@ const NotificationScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <Header
-        tagline="Your Notifications"
-        headerBgColor="#1f1f1f"
-        headerTextColor="white"
-        taglineFontSize={20}
-        showLogo={false}
-        centerTagline={true}
-      />
+      <View style={styles.headerContainer}>
+        <TouchableOpacity 
+          onPress={() => navigation.goBack()} 
+          style={styles.backButton}
+        >
+          <Ionicons name="arrow-back" size={24} color="white" />
+        </TouchableOpacity>
+        <Header
+          tagline="Your Notifications"
+          headerBgColor="#1f1f1f"
+          headerTextColor="white"
+          taglineFontSize={20}
+          showLogo={false}
+          centerTagline={true}
+        />
+      </View>
       {notifications.length === 0 ? (
         <View style={styles.noNotificationsContainer}>
           <Text style={[styles.noNotificationsText, { color: colors.text }]}>You have no new notifications.</Text>
@@ -132,6 +141,17 @@ const NotificationScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  headerContainer: {
+    position: 'relative',
+    backgroundColor: '#1f1f1f',
+  },
+  backButton: {
+    position: 'absolute',
+    left: 16,
+    top: 12,
+    zIndex: 10,
+    padding: 8,
   },
   listContentContainer: {
     padding: 16,

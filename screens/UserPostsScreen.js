@@ -84,28 +84,42 @@ const UserPostsScreen = () => {
   }, [currentUser]);
 
   const handleDeletePost = (postId) => {
-    Alert.alert(
-      'Delete Post',
-      'Are you sure you want to delete this post? This action cannot be undone.',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Delete',
-          onPress: async () => {
-            try {
-              await deleteDoc(doc(db, 'posts', postId));
-              Alert.alert('Success', 'Post deleted successfully!');
-            } catch (error) {
-              console.error('Error deleting post:', error);
-              Alert.alert('Error', 'Failed to delete post.');
-            }
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm('Are you sure you want to delete this post? This action cannot be undone.');
+      if (confirmed) {
+        deleteDoc(doc(db, 'posts', postId))
+          .then(() => {
+            alert('Post deleted successfully!');
+          })
+          .catch((error) => {
+            console.error('Error deleting post:', error);
+            alert('Failed to delete post.');
+          });
+      }
+    } else {
+      Alert.alert(
+        'Delete Post',
+        'Are you sure you want to delete this post? This action cannot be undone.',
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
           },
-        },
-      ]
-    );
+          {
+            text: 'Delete',
+            onPress: async () => {
+              try {
+                await deleteDoc(doc(db, 'posts', postId));
+                Alert.alert('Success', 'Post deleted successfully!');
+              } catch (error) {
+                console.error('Error deleting post:', error);
+                Alert.alert('Error', 'Failed to delete post.');
+              }
+            },
+          },
+        ]
+      );
+    }
   };
 
   const handleLike = async (postId, postUserId) => {
@@ -335,6 +349,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#ccc',
+    ...Platform.select({
+      web: {
+        marginBottom: 20,
+      },
+    }),
   },
   postItem: {
     padding: 15,
@@ -345,8 +364,16 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 10,
     right: 10,
-    zIndex: 1,
+    zIndex: 10,
     padding: 5,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 20,
+    ...Platform.select({
+      web: {
+        cursor: 'pointer',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+      },
+    }),
   },
   postHeader: {
     flexDirection: 'row',

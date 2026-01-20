@@ -27,22 +27,35 @@ export default function AuthScreen() {
     try {
       if (isRegistering) {
         if (!username.trim()) {
-          Alert.alert('Error', 'Please enter a username.');
+          if (Platform.OS === 'web') {
+            alert('Error: Please enter a username.');
+          } else {
+            Alert.alert('Error', 'Please enter a username.');
+          }
           setLoading(false);
           return;
         }
         if (!password.trim() || password.length < 6) {
-          Alert.alert('Error', 'Password must be at least 6 characters.');
+          if (Platform.OS === 'web') {
+            alert('Error: Password must be at least 6 characters.');
+          } else {
+            Alert.alert('Error', 'Password must be at least 6 characters.');
+          }
           setLoading(false);
           return;
         }
         await register(username, password);
+        // Registration successful - user will be automatically logged in via onAuthStateChanged
       } else {
         await login(username, password);
       }
     } catch (error) {
       console.error('Auth error:', error.message);
-      Alert.alert('Authentication Error', error.message);
+      if (Platform.OS === 'web') {
+        alert('Authentication Error: ' + error.message);
+      } else {
+        Alert.alert('Authentication Error', error.message);
+      }
     } finally {
       setLoading(false);
     }

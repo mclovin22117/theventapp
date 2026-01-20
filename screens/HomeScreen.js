@@ -334,11 +334,19 @@ const HomeScreen = () => {
 
 	const handleLike = useCallback(async (postId, postUserId) => {
 		if (!currentUser) {
-			Alert.alert('Login Required', 'You must be logged in to like a thought.');
+			if (Platform.OS === 'web') {
+				alert('Login Required: You must be logged in to like a thought.');
+			} else {
+				Alert.alert('Login Required', 'You must be logged in to like a thought.');
+			}
 			return;
 		}
 		if (currentUser.uid === postUserId) {
-			Alert.alert('Action Not Allowed', 'You cannot like your own thought.');
+			if (Platform.OS === 'web') {
+				alert('Action Not Allowed: You cannot like your own thought.');
+			} else {
+				Alert.alert('Action Not Allowed', 'You cannot like your own thought.');
+			}
 			return;
 		}
 
@@ -360,7 +368,11 @@ const HomeScreen = () => {
 
 		} catch (error) {
 			console.error('Error liking post:', error);
-			Alert.alert('Error', 'Failed to like post.');
+			if (Platform.OS === 'web') {
+				alert('Error: Failed to like post.');
+			} else {
+				Alert.alert('Error', 'Failed to like post.');
+			}
 			setPostActivityStatus(prevStatus => ({
 				...prevStatus,
 				[postId]: {
@@ -374,7 +386,11 @@ const HomeScreen = () => {
 
 	const handleUnlike = useCallback(async (postId) => {
 		if (!currentUser) {
-			Alert.alert('Login Required', 'You must be logged in to unlike a thought.');
+			if (Platform.OS === 'web') {
+				alert('Login Required: You must be logged in to unlike a thought.');
+			} else {
+				Alert.alert('Login Required', 'You must be logged in to unlike a thought.');
+			}
 			return;
 		}
 
@@ -394,7 +410,11 @@ const HomeScreen = () => {
 
 		} catch (error) {
 			console.error('Error unliking post:', error);
-			Alert.alert('Error', 'Failed to unlike post.');
+			if (Platform.OS === 'web') {
+				alert('Error: Failed to unlike post.');
+			} else {
+				Alert.alert('Error', 'Failed to unlike post.');
+			}
 			setPostActivityStatus(prevStatus => ({
 				...prevStatus,
 				[postId]: {

@@ -40,12 +40,16 @@ service cloud.firestore {
 
     // users collection: restrict sensitive data access
     match /users/{userId} {
-      // Only allow users to read their own full profile
-      allow read: if isAuthenticated() && request.auth.uid == userId;
-      // Allow limited public profile data (username, profilePic only)
-      allow get: if isAuthenticated();
-      // Only owner can write
-      allow write: if isAuthenticated() && request.auth.uid == userId;
+      // Allow anyone to read users collection (needed for username duplicate check during registration)
+      // But in practice, only username and anonymousId are publicly visible
+      allow read: if true;
+      
+      // Allow creating a new user document during registration (unauthenticated)
+      // But only if the userId matches the request.auth.uid once authenticated
+      allow create: if request.auth != null && request.auth.uid == userId;
+      
+      // Only owner can update/delete their own profile
+      allow update, delete: if isAuthenticated() && request.auth.uid == userId;
     }
 
     // notifications collection

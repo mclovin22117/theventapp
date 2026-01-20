@@ -1,6 +1,18 @@
 The Vent
 This is a simple, anonymous thought-sharing app built for a small community.
 
+> **⚠️ Important Notice**
+> 
+> This app requires Firebase to function. If you want to build and run this app yourself, you **must**:
+> 1. Create your own Firebase project at [Firebase Console](https://console.firebase.google.com/)
+> 2. Enable **Email/Password Authentication** in Firebase Console
+> 3. Enable **Firestore Database** in Firebase Console
+> 4. Enable **App Check** with reCAPTCHA v3 (for web)
+> 5. Replace the Firebase configuration in `firebaseConfig.js` with your own Firebase project credentials
+> 6. Update the Firestore security rules in Firebase Console using the `firestore.rules` file
+> 
+> **The current Firebase configuration in this repository is for the production app and should NOT be used for your own deployments.**
+
 ## � Screenshots
 
 <div align="center">

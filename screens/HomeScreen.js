@@ -454,7 +454,7 @@ const HomeScreen = () => {
 
 	return (
 		<SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-			<View style={{ flex: 1 }}>
+			<View style={isWeb ? { display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' } : { flex: 1 }}>
 				<Header
 					tagline="The Vent"
 					headerBgColor="#1f1f1f"
@@ -492,21 +492,25 @@ const HomeScreen = () => {
 				</View>
 
 				{/* Posts list */}
-				<View style={{ flex: 1 }}>
+				<View style={isWeb ? { flex: 1, overflow: 'auto', WebkitOverflowScrolling: 'touch' } : { flex: 1 }}>
 					<FlatList
 						data={searchedPosts}
 						renderItem={renderItem}
 						keyExtractor={(item) => item.id}
 						contentContainerStyle={isWeb ? styles.webListContentContainer : styles.listContentContainer}
-						removeClippedSubviews={true}
+						removeClippedSubviews={!isWeb}
 						maxToRenderPerBatch={5}
 						updateCellsBatchingPeriod={100}
 						initialNumToRender={8}
 						windowSize={5}
-						getItemLayout={(data, index) => ({
-							length: 120,
-							offset: 120 * index,
-							index,
+						scrollEnabled={true}
+						nestedScrollEnabled={true}
+						{...(!isWeb && {
+							getItemLayout: (data, index) => ({
+								length: 120,
+								offset: 120 * index,
+								index,
+							})
 						})}
 					/>
 				</View>
@@ -629,6 +633,7 @@ const styles = StyleSheet.create({
 	webListContentContainer: {
 		paddingHorizontal: 0,
 		paddingVertical: 20,
+		paddingBottom: 100,
 		alignSelf: 'center',
 		width: '100%',
 		maxWidth: 800,
@@ -980,9 +985,12 @@ const styles = StyleSheet.create({
 		shadowOffset: { width: 0, height: 4 },
 		shadowOpacity: 0.3,
 		shadowRadius: 5,
+		zIndex: 999,
 		...Platform.select({
 			web: {
 				boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+				cursor: 'pointer',
+				position: 'fixed',
 			},
 		}),
 	},

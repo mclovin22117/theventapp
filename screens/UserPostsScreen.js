@@ -264,14 +264,22 @@ const UserPostsScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <Header
-        tagline="Your Posts"
-        headerBgColor="#1f1f1f"
-        headerTextColor="white"
-        taglineFontSize={20}
-        showLogo={false}
-        centerTagline={true}
-      />
+      <View style={styles.headerContainer}>
+        <TouchableOpacity 
+          onPress={() => navigation.goBack()} 
+          style={styles.backButton}
+        >
+          <Ionicons name="arrow-back" size={24} color="white" />
+        </TouchableOpacity>
+        <Header
+          tagline="Your Posts"
+          headerBgColor="#1f1f1f"
+          headerTextColor="white"
+          taglineFontSize={20}
+          showLogo={false}
+          centerTagline={true}
+        />
+      </View>
       {posts.length === 0 ? (
         <View style={styles.noPostsContainer}>
           <Text style={[styles.noPostsText, { color: colors.text }]}>You haven't shared any thoughts yet.</Text>
@@ -299,6 +307,17 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+  },
+  headerContainer: {
+    position: 'relative',
+    backgroundColor: '#1f1f1f',
+  },
+  backButton: {
+    position: 'absolute',
+    left: 16,
+    top: 12,
+    zIndex: 10,
+    padding: 8,
   },
   contentWrapper: {
     flex: 1,

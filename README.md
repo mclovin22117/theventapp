@@ -3,15 +3,36 @@ This is a simple, anonymous thought-sharing app built for a small community.
 
 > **⚠️ Important Notice**
 > 
-> This app requires Firebase to function. If you want to build and run this app yourself, you **must**:
+> This app requires **Firebase** and **Cloudinary** to function. If you want to build and run this app yourself, you **must**:
+> 
+> ### Firebase Setup:
 > 1. Create your own Firebase project at [Firebase Console](https://console.firebase.google.com/)
 > 2. Enable **Email/Password Authentication** in Firebase Console
 > 3. Enable **Firestore Database** in Firebase Console
 > 4. Enable **App Check** with reCAPTCHA v3 (for web)
-> 5. Replace the Firebase configuration in `firebaseConfig.js` with your own Firebase project credentials
+> 5. Copy `firebaseConfig.example.js` to `firebaseConfig.js` and replace with your Firebase credentials
 > 6. Update the Firestore security rules in Firebase Console using the `firestore.rules` file
 > 
-> **The current Firebase configuration in this repository is for the production app and should NOT be used for your own deployments.**
+> ### Cloudinary Setup (for profile pictures):
+> 1. Create a free account at [Cloudinary](https://cloudinary.com/)
+> 2. Get your **Cloud Name**, **API Key**, and **API Secret** from the Cloudinary dashboard
+> 3. Create an **upload preset** in Cloudinary Settings → Upload
+> 4. Copy `cloudinaryConfig.example.js` to `cloudinaryConfig.js` and replace with your Cloudinary credentials
+> 5. Set Firebase Cloud Function environment variables:
+>    ```bash
+>    cd notify
+>    firebase functions:config:set \
+>      cloudinary.cloud_name="YOUR_CLOUD_NAME" \
+>      cloudinary.api_key="YOUR_API_KEY" \
+>      cloudinary.api_secret="YOUR_API_SECRET" \
+>      cloudinary.upload_preset="YOUR_UPLOAD_PRESET"
+>    ```
+> 6. Deploy the Cloud Functions:
+>    ```bash
+>    firebase deploy --only functions
+>    ```
+> 
+> **The current Firebase and Cloudinary configurations in this repository are for the production app and should NOT be used for your own deployments.**
 
 ## � Screenshots
 

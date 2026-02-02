@@ -2,22 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { auth, db } from '../firebaseConfig';
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged
-} from 'firebase/auth';
-import {
-  doc,
-  setDoc,
-  getDoc,
-  collection,
-  query,
-  where,
-  getDocs
-} from 'firebase/firestore';
+import { supabase } from '../supabaseConfig';
 
 const AuthContext = createContext();
 
@@ -32,44 +17,59 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      try {
-        setError(null);
-        
-        if (user) {
-          setCurrentUser(user);
-          
-          const userDocRef = doc(db, 'users', user.uid);
-          const userDocSnap = await getDoc(userDocRef);
-          
-          if (userDocSnap.exists()) {
-            const userData = userDocSnap.data();
-            setAppUser(userData);
-            await AsyncStorage.setItem('appUser', JSON.stringify(userData));
-          } else {
-            console.warn("User data not found in Firestore for UID:", user.uid);
-            const userData = {
-              username: user.email?.split('@')[0] || 'user',
-              createdAt: new Date(),
-            };
-            await setDoc(userDocRef, userData);
-            setAppUser(userData);
-          }
-        } else {
-          setCurrentUser(null);
-          setAppUser(null);
-          await AsyncStorage.removeItem('appUser');
-        }
-      } catch (err) {
-        console.error('Auth state change error:', err);
-        setError('Authentication error occurred');
-      } finally {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        handleAuthChange(session.user);
+      } else {
         setLoading(false);
       }
     });
 
-    return unsubscribe;
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        await handleAuthChange(session.user);
+      } else {
+        setCurrentUser(null);
+        setAppUser(null);
+        await AsyncStorage.removeItem('appUser');
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
+
+  const handleAuthChange = async (user) => {
+    try {
+      setError(null);
+      setCurrentUser(user);
+      
+      // Fetch user profile from users table
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('auth_id', user.id)
+        .single();
+      
+      if (userError && userError.code !== 'PGRST116') { // PGRST116 = no rows returned
+        console.error('Error fetching user data:', userError);
+      }
+      
+      if (userData) {
+        setAppUser(userData);
+        await AsyncStorage.setItem('appUser', JSON.stringify(userData));
+      } else {
+        console.warn("User data not found for auth_id:", user.id);
+      }
+    } catch (err) {
+      console.error('Auth state change error:', err);
+      setError('Authentication error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const register = async (username, password) => {
     try {
@@ -77,44 +77,61 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
 
       // Check if username is already taken
-      const usersRef = collection(db, 'users');
-      const q = query(usersRef, where('username', '==', username));
-      const querySnapshot = await getDocs(q);
+      const { data: existingUsers, error: checkError } = await supabase
+        .from('users')
+        .select('username')
+        .eq('username', username)
+        .limit(1);
 
-      if (!querySnapshot.empty) {
+      if (checkError) {
+        throw checkError;
+      }
+
+      if (existingUsers && existingUsers.length > 0) {
         throw new Error('Username is already taken. Please choose another.');
       }
 
-      // Generate a unique email from username for Firebase Auth
-      // Firebase requires an email, but we'll use username@thevent.app format
+      // Generate a unique email from username for Supabase Auth
       const generatedEmail = `${username.toLowerCase()}@thevent.app`;
 
-      // Create Firebase Auth user using the generated email and password
-      const userCredential = await createUserWithEmailAndPassword(auth, generatedEmail, password);
-      const firebaseUser = userCredential.user;
+      // Create Supabase Auth user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: generatedEmail,
+        password: password,
+      });
 
-      // Store user data in Firestore (without storing email)
-      const userData = {
-        username: username,
-        createdAt: new Date(),
-      };
+      if (authError) throw authError;
+      if (!authData.user) throw new Error('Failed to create user');
 
-      await setDoc(doc(db, 'users', firebaseUser.uid), userData);
+      // Create user profile in users table
+      const { error: insertError } = await supabase
+        .from('users')
+        .insert([
+          {
+            auth_id: authData.user.id,
+            username: username,
+            emoji: '😊',
+            created_at: new Date().toISOString(),
+          }
+        ]);
 
-      // User is now automatically logged in via onAuthStateChanged
-      return { user: firebaseUser, username: username };
+      if (insertError) {
+        // If user creation fails, try to clean up auth user
+        console.error('Failed to create user profile:', insertError);
+        throw new Error('Failed to create user profile');
+      }
+
+      return { user: authData.user, username: username };
     } catch (err) {
       console.error('Registration error:', err);
       
       let errorMessage = 'Registration failed';
       if (err.message.includes('already taken')) {
         errorMessage = err.message;
-      } else if (err.code === 'auth/email-already-in-use') {
+      } else if (err.message.includes('User already registered')) {
         errorMessage = 'Username is already taken. Please choose another.';
-      } else if (err.code === 'auth/weak-password') {
+      } else if (err.message.includes('Password should be at least 6 characters')) {
         errorMessage = 'Password must be at least 6 characters.';
-      } else if (err.code === 'auth/network-request-failed') {
-        errorMessage = 'Network error. Please check your connection.';
       } else if (err.message) {
         errorMessage = err.message;
       }
@@ -126,7 +143,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Login function now uses username and converts it to email format
   const login = async (username, password) => {
     try {
       setError(null);
@@ -135,23 +151,22 @@ export const AuthProvider = ({ children }) => {
       // Convert username to the generated email format
       const generatedEmail = `${username.toLowerCase()}@thevent.app`;
 
-      const userCredential = await signInWithEmailAndPassword(auth, generatedEmail, password);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: generatedEmail,
+        password: password,
+      });
+
+      if (error) throw error;
       
-      return userCredential.user;
+      return data.user;
     } catch (err) {
       console.error('Login error:', err);
       
       let errorMessage = 'Login failed';
-      if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') { // to Catch common login failures
+      if (err.message.includes('Invalid login credentials')) {
         errorMessage = 'Invalid username or password.';
-      } else if (err.code === 'auth/wrong-password') {
-        errorMessage = 'Incorrect password. Please try again.';
-      } else if (err.code === 'auth/invalid-email') {
-        errorMessage = 'Invalid username format.';
-      } else if (err.code === 'auth/too-many-requests') {
-        errorMessage = 'Too many failed attempts. Please try again later.';
-      } else if (err.code === 'auth/network-request-failed') {
-        errorMessage = 'Network error. Please check your connection.';
+      } else if (err.message.includes('Email not confirmed')) {
+        errorMessage = 'Please confirm your email address.';
       } else if (err.message) {
         errorMessage = err.message;
       }
@@ -166,7 +181,8 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       setError(null);
-      await signOut(auth);
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
     } catch (err) {
       console.error('Logout error:', err);
       setError('Failed to logout');

@@ -17,8 +17,7 @@ import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons';
 import ThoughtInput from '../components/ThoughtInput';
 import Header from '../components/Header';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../firebaseConfig';
+import { supabase } from '../supabaseConfig';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { categories } from '../utils/helpers';
@@ -46,29 +45,39 @@ const PostScreen = ({ navigation }) => {
     setIsPosting(true);
 
     try {
-      const animalEmojis = ['🐱', '🐶', '🐼', '🦊', '🐸', '🦁', '🐯', '🐨', '🐰', '🦄', '🐻', '🐭', '🦊', '🐮'];
-      const randomEmoji = animalEmojis[Math.floor(Math.random() * animalEmojis.length)];
+      const { error } = await supabase
+        .from('posts')
+        .insert([
+          {
+            text: thoughtText,
+            user_id: appUser.id,
+            category: selectedTag,
+            created_at: new Date().toISOString(),
+          }
+        ]);
 
-      await addDoc(collection(db, 'posts'), {
-        text: thoughtText,
-        createdAt: serverTimestamp(),
-        userId: currentUser.uid,
-        username: appUser.username,
-        anonymousId: randomEmoji,
-        likes: 0,
-        tag: selectedTag,
-        profilePic: appUser?.profilePic || null,
-      });
+      if (error) throw error;
 
       setThoughtText('');
       setSelectedTag(categories[0]);
       setIsPosting(false);
-      Alert.alert('Success', 'Your thought has been shared!');
+      
+      if (Platform.OS === 'web') {
+        alert('Your thought has been shared!');
+      } else {
+        Alert.alert('Success', 'Your thought has been shared!');
+      }
+      
       navigation.navigate('Home');
     } catch (error) {
       console.error('Error adding thought:', error);
       setIsPosting(false);
-      Alert.alert('Error', 'There was a problem sharing your thought. Please try again.');
+      
+      if (Platform.OS === 'web') {
+        alert('There was a problem sharing your thought. Please try again.');
+      } else {
+        Alert.alert('Error', 'There was a problem sharing your thought. Please try again.');
+      }
     }
   };
 

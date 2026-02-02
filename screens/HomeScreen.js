@@ -18,17 +18,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Header from '../components/Header';
-import { db } from '../firebaseConfig';
-import {
-	collection,
-	query,
-	orderBy,
-	onSnapshot,
-	doc,
-	setDoc,
-	deleteDoc,
-	getDocs,
-} from 'firebase/firestore';
+import { supabase } from '../supabaseConfig';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
@@ -38,18 +28,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const isWeb = Platform.OS === 'web';
 const numColumns = isWeb ? 3 : 2;
-
-// Recursively count all replies and their nested replies
-const countRepliesRecursively = async (repliesRef) => {
-	let count = 0;
-	const snapshot = await getDocs(repliesRef);
-	count += snapshot.size;
-	for (const docSnap of snapshot.docs) {
-		const nestedRepliesRef = collection(docSnap.ref, 'replies');
-		count += await countRepliesRecursively(nestedRepliesRef);
-	}
-	return count;
-};
 
 // Helper to detect and render URLs as clickable links
 const renderTextWithLinks = (text, textStyle) => {
@@ -226,7 +204,7 @@ const HomeScreen = () => {
 	const [loading, setLoading] = useState(true);
 	const { colors, isDarkMode } = useTheme();
 	const scrollY = useRef(new Animated.Value(0)).current;
-	const { currentUser } = useAuth();
+	const { currentUser, appUser } = useAuth();
 	const navigation = useNavigation();
 	const insets = useSafeAreaInsets();
 
@@ -245,41 +223,87 @@ const HomeScreen = () => {
 	const [modalPic, setModalPic] = useState(null);
 
 	useEffect(() => {
-		const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
+		// Fetch posts with user info and activity counts
+		const fetchPosts = async () => {
+			try {
+				const { data: postsData, error } = await supabase
+					.from('posts')
+					.select(`
+						*,
+						users!posts_user_id_fkey (
+							id,
+							username,
+							emoji,
+							profile_pic
+						)
+					`)
+					.order('created_at', { ascending: false });
 
-		const unsubscribe = onSnapshot(q, async (querySnapshot) => {
-			const fetchedPosts = [];
-			const newPostActivityStatus = {};
+				if (error) throw error;
 
-			const promises = querySnapshot.docs.map(async (docSnapshot) => {
-				const postData = { id: docSnapshot.id, ...docSnapshot.data() };
-				fetchedPosts.push(postData);
+				// Fetch likes and replies counts for each post
+				const postsWithActivity = await Promise.all(
+					postsData.map(async (post) => {
+						// Get likes count and check if current user liked
+						const { data: likes, error: likesError } = await supabase
+							.from('likes')
+							.select('user_id')
+							.eq('post_id', post.id);
 
-				const likesRef = collection(db, 'posts', postData.id, 'likes');
-				const likesSnapshot = await getDocs(likesRef);
-				const likeCount = likesSnapshot.size;
-				const isLiked = currentUser ? likesSnapshot.docs.some(doc => doc.id === currentUser.uid) : false;
+						const likeCount = likes?.length || 0;
+						const isLiked = currentUser && likes ? likes.some(like => like.user_id === appUser?.id) : false;
 
-				// Use recursive count for replies
-				const repliesRef = collection(db, 'posts', postData.id, 'replies');
-				const replyCount = await countRepliesRecursively(repliesRef);
+						// Get replies count (already calculated by trigger)
+						const replyCount = post.replies_count || 0;
 
-				newPostActivityStatus[postData.id] = { isLiked, likeCount, replyCount };
-			});
+						return {
+							...post,
+							user: post.users,
+							likeCount,
+							replyCount,
+							isLiked
+						};
+					})
+				);
 
-			await Promise.all(promises);
+				setPosts(postsWithActivity);
 
-			setPosts(fetchedPosts);
-			setPostActivityStatus(newPostActivityStatus);
-			setLoading(false);
-		}, (error) => {
-			console.error('Error fetching posts:', error);
-			setLoading(false);
-			Alert.alert('Error', 'Failed to load posts.');
-		});
+				// Build activity status map
+				const newPostActivityStatus = {};
+				postsWithActivity.forEach(post => {
+					newPostActivityStatus[post.id] = {
+						isLiked: post.isLiked,
+						likeCount: post.likeCount,
+						replyCount: post.replyCount
+					};
+				});
+				setPostActivityStatus(newPostActivityStatus);
+				setLoading(false);
+			} catch (error) {
+				console.error('Error fetching posts:', error);
+				setLoading(false);
+				if (Platform.OS === 'web') {
+					alert('Failed to load posts.');
+				} else {
+					Alert.alert('Error', 'Failed to load posts.');
+				}
+			}
+		};
 
-		return () => unsubscribe();
-	}, [currentUser]);
+		fetchPosts();
+
+		// Set up real-time subscription
+		const subscription = supabase
+			.channel('posts_changes')
+			.on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => {
+				fetchPosts(); // Refetch when posts change
+			})
+			.subscribe();
+
+		return () => {
+			subscription.unsubscribe();
+		};
+	}, [currentUser, appUser]);
 
 	// Prefetch OG images for Spotify links when posts change
 	useEffect(() => {
@@ -308,30 +332,6 @@ const HomeScreen = () => {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [posts]);
 
-	// Subscribe to user docs to always have the latest profilePic (even for old posts)
-	useEffect(() => {
-		if (!posts.length) return;
-		const uniqueUserIds = Array.from(new Set(posts.map(p => p.userId)));
-		const unsubscribers = [];
-		uniqueUserIds.forEach(uid => {
-			const uRef = doc(db, 'users', uid);
-			const unsub = onSnapshot(uRef, snap => {
-				if (snap.exists()) {
-					const data = snap.data();
-					setUserProfileCache(prev => ({
-						...prev,
-						[uid]: {
-							profilePic: data.profilePic || null,
-							anonymousId: data.anonymousId || '🙂',
-						},
-					}));
-				}
-			});
-			unsubscribers.push(unsub);
-		});
-		return () => unsubscribers.forEach(u => u());
-	}, [posts]);
-
 	const handleLike = useCallback(async (postId, postUserId) => {
 		if (!currentUser) {
 			if (Platform.OS === 'web') {
@@ -341,7 +341,7 @@ const HomeScreen = () => {
 			}
 			return;
 		}
-		if (currentUser.uid === postUserId) {
+		if (appUser?.id === postUserId) {
 			if (Platform.OS === 'web') {
 				alert('Action Not Allowed: You cannot like your own thought.');
 			} else {
@@ -349,8 +349,6 @@ const HomeScreen = () => {
 			}
 			return;
 		}
-
-		const likeDocRef = doc(db, 'posts', postId, 'likes', currentUser.uid);
 
 		try {
 			setPostActivityStatus(prevStatus => ({
@@ -362,9 +360,11 @@ const HomeScreen = () => {
 				}
 			}));
 
-			await setDoc(likeDocRef, {
-				timestamp: new Date(),
-			});
+			const { error } = await supabase
+				.from('likes')
+				.insert([{ post_id: postId, user_id: appUser.id }]);
+
+			if (error) throw error;
 
 		} catch (error) {
 			console.error('Error liking post:', error);
@@ -382,7 +382,7 @@ const HomeScreen = () => {
 				}
 			}));
 		}
-	}, [currentUser]);
+	}, [currentUser, appUser]);
 
 	const handleUnlike = useCallback(async (postId) => {
 		if (!currentUser) {
@@ -394,8 +394,6 @@ const HomeScreen = () => {
 			return;
 		}
 
-		const likeDocRef = doc(db, 'posts', postId, 'likes', currentUser.uid);
-
 		try {
 			setPostActivityStatus(prevStatus => ({
 				...prevStatus,
@@ -406,7 +404,13 @@ const HomeScreen = () => {
 				}
 			}));
 
-			await deleteDoc(likeDocRef);
+			const { error } = await supabase
+				.from('likes')
+				.delete()
+				.eq('post_id', postId)
+				.eq('user_id', appUser.id);
+
+			if (error) throw error;
 
 		} catch (error) {
 			console.error('Error unliking post:', error);
@@ -424,7 +428,7 @@ const HomeScreen = () => {
 				}
 			}));
 		}
-	}, [currentUser]);
+	}, [currentUser, appUser]);
 
 	const handleLikeToggle = useCallback((postId, postUserId, hasLiked) => {
 		if (hasLiked) {

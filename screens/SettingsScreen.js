@@ -6,8 +6,9 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import Header from '../components/Header';
 import { useNavigation } from '@react-navigation/native';
-import { db } from '../firebaseConfig';
+import { db, functions } from '../firebaseConfig';
 import { doc, collection, onSnapshot, query, where, updateDoc, getDoc } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -128,19 +129,30 @@ export default function SettingsScreen() {
         return;
       }
 
-      // Cloudinary upload configuration
-      const CLOUDINARY_UPLOAD_URL = 'https://api.cloudinary.com/v1_1/dycn1rw2e/image/upload';
-      const UPLOAD_PRESET = 'thevent-profiles-v2';
+      Alert.alert('Uploading', 'Uploading your profile picture...');
 
+      // Get signature from Cloud Function
+      const generateSignature = httpsCallable(functions, 'generateCloudinarySignature');
+      const signatureResult = await generateSignature({
+        timestamp: Math.round(new Date().getTime() / 1000),
+        folder: 'thevent-profiles',
+      });
+
+      const { signature, timestamp, apiKey, cloudName, uploadPreset } = signatureResult.data;
+
+      // Upload to Cloudinary with signature
       const mime = asset.mimeType || 'image/jpeg';
       const dataUrl = `data:${mime};base64,${asset.base64}`;
 
       const formData = new FormData();
       formData.append('file', dataUrl);
-      formData.append('upload_preset', UPLOAD_PRESET);
+      formData.append('upload_preset', uploadPreset);
+      formData.append('timestamp', timestamp);
+      formData.append('signature', signature);
+      formData.append('api_key', apiKey);
+      formData.append('folder', 'thevent-profiles');
 
-      Alert.alert('Uploading', 'Uploading your profile picture...');
-
+      const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
       const response = await fetch(CLOUDINARY_UPLOAD_URL, {
         method: 'POST',
         body: formData,

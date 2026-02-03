@@ -12,17 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Header from '../components/Header';
-import { db } from '../firebaseConfig';
-import {
-  collection,
-  query,
-  where,
-  orderBy,
-  onSnapshot,
-  doc,
-  getDocs,
-  deleteDoc,
-} from 'firebase/firestore';
+import { supabase } from '../supabaseConfig';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
@@ -32,64 +22,96 @@ const UserPostsScreen = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const { colors } = useTheme();
-  const { currentUser } = useAuth();
+  const { appUser } = useAuth();
   const navigation = useNavigation();
 
-  const [postActivityStatus, setPostActivityStatus] = useState({});
-
   useEffect(() => {
-    if (!currentUser) {
+    if (!appUser) {
       setLoading(false);
       return;
     }
 
-    const q = query(
-      collection(db, 'posts'),
-      where('userId', '==', currentUser.uid),
-      orderBy('createdAt', 'desc')
-    );
+    fetchPosts();
 
-    const unsubscribe = onSnapshot(q, async (querySnapshot) => {
-      const fetchedPosts = [];
-      const newPostActivityStatus = {};
+    // Subscribe to real-time updates for user's posts
+    const channel = supabase
+      .channel('user_posts_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'posts',
+          filter: `user_id=eq.${appUser.id}`,
+        },
+        () => {
+          fetchPosts();
+        }
+      )
+      .subscribe();
 
-      const promises = querySnapshot.docs.map(async (docSnapshot) => {
-        const postData = { id: docSnapshot.id, ...docSnapshot.data() };
-        fetchedPosts.push(postData);
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [appUser]);
 
-        const likesRef = collection(db, 'posts', postData.id, 'likes');
-        const likesSnapshot = await getDocs(likesRef);
-        const likeCount = likesSnapshot.size;
-        const isLiked = likesSnapshot.docs.some(doc => doc.id === currentUser.uid);
+  const fetchPosts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('posts')
+        .select(`
+          *,
+          users!posts_user_id_fkey (
+            id,
+            username,
+            emoji,
+            profile_pic
+          )
+        `)
+        .eq('user_id', appUser.id)
+        .order('created_at', { ascending: false });
 
-        const repliesRef = collection(db, 'posts', postData.id, 'replies');
-        const repliesSnapshot = await getDocs(repliesRef);
-        const replyCount = repliesSnapshot.size;
+      if (error) throw error;
 
-        newPostActivityStatus[postData.id] = { isLiked, likeCount, replyCount };
-      });
+      // Check which posts the user has liked
+      const { data: userLikes, error: likesError } = await supabase
+        .from('likes')
+        .select('post_id')
+        .eq('user_id', appUser.id);
 
-      await Promise.all(promises);
+      if (likesError) throw likesError;
 
-      setPosts(fetchedPosts);
-      setPostActivityStatus(newPostActivityStatus);
+      const likedPostIds = new Set(userLikes.map(like => like.post_id));
+
+      // Map posts with user data and like status
+      const postsWithUserData = data.map(post => ({
+        ...post,
+        username: post.users.username,
+        emoji: post.users.emoji,
+        profile_pic: post.users.profile_pic,
+        isLiked: likedPostIds.has(post.id),
+      }));
+
+      setPosts(postsWithUserData);
       setLoading(false);
-    }, (error) => {
+    } catch (error) {
       console.error('Error fetching user posts:', error);
       setLoading(false);
       Alert.alert('Error', 'Failed to load your posts.');
-    });
-
-    return () => unsubscribe();
-  }, [currentUser]);
+    }
+  };
 
   const handleDeletePost = (postId) => {
     if (Platform.OS === 'web') {
       const confirmed = window.confirm('Are you sure you want to delete this post? This action cannot be undone.');
       if (confirmed) {
-        deleteDoc(doc(db, 'posts', postId))
+        supabase
+          .from('posts')
+          .delete()
+          .eq('id', postId)
           .then(() => {
             alert('Post deleted successfully!');
+            fetchPosts();
           })
           .catch((error) => {
             console.error('Error deleting post:', error);
@@ -109,8 +131,15 @@ const UserPostsScreen = () => {
             text: 'Delete',
             onPress: async () => {
               try {
-                await deleteDoc(doc(db, 'posts', postId));
+                const { error } = await supabase
+                  .from('posts')
+                  .delete()
+                  .eq('id', postId);
+                
+                if (error) throw error;
+                
                 Alert.alert('Success', 'Post deleted successfully!');
+                fetchPosts();
               } catch (error) {
                 console.error('Error deleting post:', error);
                 Alert.alert('Error', 'Failed to delete post.');
@@ -123,84 +152,83 @@ const UserPostsScreen = () => {
   };
 
   const handleLike = async (postId, postUserId) => {
-    if (!currentUser) {
+    if (!appUser) {
       Alert.alert('Login Required', 'You must be logged in to like a thought.');
       return;
     }
-    if (currentUser.uid === postUserId) {
+    if (appUser.id === postUserId) {
       Alert.alert('Action Not Allowed', 'You cannot like your own thought.');
       return;
     }
 
-    const likeDocRef = doc(db, 'posts', postId, 'likes', currentUser.uid);
-
     try {
-      setPostActivityStatus(prevStatus => ({
-        ...prevStatus,
-        [postId]: {
-          ...prevStatus[postId],
-          isLiked: true,
-          likeCount: (prevStatus[postId]?.likeCount || 0) + 1,
-        }
-      }));
+      // Optimistic update
+      setPosts(prevPosts =>
+        prevPosts.map(post =>
+          post.id === postId
+            ? { 
+                ...post, 
+                isLiked: true, 
+                likes_count: (post.likes_count || 0) + 1 
+              }
+            : post
+        )
+      );
 
-      await setDoc(likeDocRef, { timestamp: new Date() });
+      const { error } = await supabase
+        .from('likes')
+        .insert([{ post_id: postId, user_id: appUser.id }]);
 
+      if (error) throw error;
     } catch (error) {
       console.error('Error liking post:', error);
       Alert.alert('Error', 'Failed to like post.');
-      setPostActivityStatus(prevStatus => ({
-        ...prevStatus,
-        [postId]: {
-          ...prevStatus[postId],
-          isLiked: false,
-          likeCount: (prevStatus[postId]?.likeCount || 0) - 1,
-        }
-      }));
+      // Revert optimistic update
+      fetchPosts();
     }
   };
 
   const handleUnlike = async (postId) => {
-    if (!currentUser) {
+    if (!appUser) {
       Alert.alert('Login Required', 'You must be logged in to unlike a thought.');
       return;
     }
 
-    const likeDocRef = doc(db, 'posts', postId, 'likes', currentUser.uid);
-
     try {
-      setPostActivityStatus(prevStatus => ({
-        ...prevStatus,
-        [postId]: {
-          ...prevStatus[postId],
-          isLiked: false,
-          likeCount: (prevStatus[postId]?.likeCount || 0) - 1,
-        }
-      }));
+      // Optimistic update
+      setPosts(prevPosts =>
+        prevPosts.map(post =>
+          post.id === postId
+            ? { 
+                ...post, 
+                isLiked: false, 
+                likes_count: Math.max((post.likes_count || 0) - 1, 0) 
+              }
+            : post
+        )
+      );
 
-      await deleteDoc(likeDocRef);
+      const { error } = await supabase
+        .from('likes')
+        .delete()
+        .eq('post_id', postId)
+        .eq('user_id', appUser.id);
 
+      if (error) throw error;
     } catch (error) {
       console.error('Error unliking post:', error);
       Alert.alert('Error', 'Failed to unlike post.');
-      setPostActivityStatus(prevStatus => ({
-        ...prevStatus,
-        [postId]: {
-          ...prevStatus[postId],
-          isLiked: true,
-          likeCount: (prevStatus[postId]?.likeCount || 0) + 1,
-        }
-      }));
+      // Revert optimistic update
+      fetchPosts();
     }
   };
 
   const renderItem = ({ item }) => {
-    const activityStatus = postActivityStatus[item.id] || { isLiked: false, likeCount: 0, replyCount: 0 };
-    const hasLiked = activityStatus.isLiked;
-    const likeCount = activityStatus.likeCount;
-    const replyCount = activityStatus.replyCount;
+    const hasLiked = item.isLiked;
+    const likeCount = item.likes_count || 0;
+    const replyCount = item.replies_count || 0;
 
-    const buttonDisabled = !currentUser || currentUser.uid === item.userId;
+    const buttonDisabled = !appUser || appUser.id === item.user_id;
 
     return (
       <View style={[styles.postItemWrapper, { borderColor: colors.border }]}>
@@ -211,20 +239,20 @@ const UserPostsScreen = () => {
         >
           <View style={styles.postHeader}>
             <Text style={[styles.postAuthor, { color: colors.primary }]}>
-              {item.username} {item.anonymousId}
+              {item.emoji} {item.username}
             </Text>
-            {item.tag && (
+            {item.category && (
               <View style={[styles.tagContainer, { borderColor: colors.primary }]}>
-                <Text style={[styles.tagText, { color: colors.primary }]}>{item.tag}</Text>
+                <Text style={[styles.tagText, { color: colors.primary }]}>{item.category}</Text>
               </View>
             )}
           </View>
           <Text style={[styles.postText, { color: colors.text }]}>{item.text}</Text>
 
           <View style={styles.postFooter}>
-            {item.createdAt && (
+            {item.created_at && (
               <Text style={[styles.postTimestamp, { color: colors.placeholder }]}>
-                {new Date(item.createdAt.toDate()).toLocaleString()}
+                {new Date(item.created_at).toLocaleString()}
               </Text>
             )}
             <View style={styles.actionButtonsContainer}>
@@ -234,7 +262,7 @@ const UserPostsScreen = () => {
                   if (hasLiked) {
                     handleUnlike(item.id);
                   } else {
-                    handleLike(item.id, item.userId);
+                    handleLike(item.id, item.user_id);
                   }
                 }}
                 style={styles.actionButton}

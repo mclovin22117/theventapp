@@ -147,8 +147,8 @@ const PostItem = memo(({
 	const replyCount = activityStatus?.replyCount || 0;
 
 	const cached = userProfileCache[item.userId];
-	const effectiveProfilePic = cached?.profilePic || item.profilePic || null;
-	const effectiveAnonymous = item.anonymousId || cached?.anonymousId || '🙂';
+	const effectiveProfilePic = item.users?.profile_pic || cached?.profilePic || item.profilePic || null;
+	const effectiveAnonymous = item.users?.emoji || item.anonymousId || cached?.anonymousId || '🙂';
 
 	return (
 		<TouchableOpacity
@@ -158,20 +158,24 @@ const PostItem = memo(({
 				{ backgroundColor: colors.background, borderBottomColor: colors.border }
 			]}
 		>
-			{effectiveProfilePic ? (
-				<TouchableOpacity onPress={() => onProfilePicPress(effectiveProfilePic)}>
-					<Image source={{ uri: effectiveProfilePic }} style={styles.whatsappAvatar} />
-				</TouchableOpacity>
-			) : (
-				<View style={styles.whatsappAvatarPlaceholder}>
-					<Text style={{ fontSize: 20 }}>{effectiveAnonymous}</Text>
+			<View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+				{effectiveProfilePic ? (
+					<TouchableOpacity onPress={() => onProfilePicPress(effectiveProfilePic)}>
+						<Image source={{ uri: effectiveProfilePic }} style={styles.whatsappAvatar} />
+					</TouchableOpacity>
+				) : (
+					<View style={styles.whatsappAvatarPlaceholder}>
+						<Text style={{ fontSize: 20 }}>{effectiveAnonymous}</Text>
+					</View>
+				)}
+				<View style={{ flex: 1, marginLeft: 12 }}>
+					<View style={styles.whatsappPostTop}>
+						<Text style={[styles.whatsappUsername, { color: colors.text }]} numberOfLines={1}>{item.users?.username || item.username}</Text>
+						<Text style={[styles.whatsappTime, { color: colors.placeholder }]}>{new Date(item.created_at).toLocaleDateString()}</Text>
+					</View>
 				</View>
-			)}
-			<View style={{ flex: 1 }}>
-				<View style={styles.whatsappPostTop}>
-					<Text style={[styles.whatsappUsername, { color: colors.text }]} numberOfLines={1}>{item.username}</Text>
-					<Text style={[styles.whatsappTime, { color: colors.placeholder }]}>{new Date(item.createdAt?.toDate()).toLocaleDateString()}</Text>
-				</View>
+			</View>
+			<View style={{ paddingLeft: 0 }}>
 				<Text style={[styles.whatsappMessage, { color: colors.placeholder }]} numberOfLines={2}>{item.text}</Text>
 				{item.tag && (
 					<View style={[styles.whatsappTag, { borderColor: '#888888' }]}>

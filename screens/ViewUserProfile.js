@@ -2,8 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
-import { db } from '../firebaseConfig';
-import { doc, getDoc } from 'firebase/firestore';
+import { supabase } from '../supabaseConfig';
 import Header from '../components/Header';
 
 const ViewUserProfileScreen = ({ route }) => {
@@ -15,13 +14,21 @@ const ViewUserProfileScreen = ({ route }) => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const userDoc = await getDoc(doc(db, 'users', userId));
-        if (userDoc.exists()) {
-          setUser(userDoc.data());
+        const { data, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', userId)
+          .single();
+
+        if (error) throw error;
+
+        if (data) {
+          setUser(data);
         } else {
           setUser(null);
         }
       } catch (e) {
+        console.error('Error fetching user:', e);
         Alert.alert('Error', 'Could not load user profile.');
         setUser(null);
       }
@@ -38,7 +45,7 @@ const ViewUserProfileScreen = ({ route }) => {
     );
   }
 
-  if (!user || user.publicProfile === false) {
+  if (!user || user.public_profile === false) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }}>
         <Header tagline="User Profile" headerBgColor="#1f1f1f" headerTextColor="white" taglineFontSize={20} showLogo={false} />

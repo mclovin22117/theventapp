@@ -6,12 +6,11 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import Header from '../components/Header';
 import { useNavigation } from '@react-navigation/native';
-import { db, functions } from '../firebaseConfig';
-import { doc, collection, onSnapshot, query, where, updateDoc, getDoc } from 'firebase/firestore';
-import { httpsCallable } from 'firebase/functions';
+import { supabase } from '../supabaseConfig';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
+import { uploadProfilePicture } from '../utils/imageUpload';
 
 export default function ProfileScreen() {
   const { appUser, currentUser, loading, logout } = useAuth();
@@ -23,54 +22,97 @@ export default function ProfileScreen() {
   const [profilePic, setProfilePic] = useState(null);
 
   const handleUpdateApp = () => {
-    Linking.openURL('https://github.com/reetik-rana/theventapp/releases').catch((err) => {
+    Linking.openURL('https://github.com/yourusername/theventapp/releases').catch((err) => {
       Alert.alert('Error', 'Could not open the update page.');
     });
   };
 
   useEffect(() => {
-    if (!currentUser) return;
+    if (!appUser) return;
 
-    const q = query(
-      collection(db, 'notifications'),
-      where('recipientId', '==', currentUser.uid),
-      where('read', '==', false)
-    );
+    fetchNotifications();
 
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      setUnreadNotifications(querySnapshot.size);
-    });
+    // Subscribe to real-time notification updates
+    const channel = supabase
+      .channel('profile_notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `recipient_id=eq.${appUser.id}`,
+        },
+        () => {
+          fetchNotifications();
+        }
+      )
+      .subscribe();
 
-    return () => unsubscribe();
-  }, [currentUser]);
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [appUser]);
+
+  const fetchNotifications = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('recipient_id', appUser.id)
+        .eq('read', false);
+
+      if (error) throw error;
+      setUnreadNotifications(count || 0);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  };
 
   // Fetch publicProfile and profilePic settings on mount
   useEffect(() => {
     const fetchUserData = async () => {
-      if (!currentUser) return;
-      const userDocRef = doc(db, 'users', currentUser.uid);
-      const userDoc = await getDoc(userDocRef);
-      if (userDoc.exists()) {
-        const data = userDoc.data();
-        if (data.publicProfile !== undefined) {
-          setPublicProfile(data.publicProfile);
+      if (!appUser) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('public_profile, profile_pic')
+          .eq('id', appUser.id)
+          .single();
+
+        if (error) throw error;
+
+        if (data) {
+          if (data.public_profile !== undefined) {
+            setPublicProfile(data.public_profile);
+          }
+          if (data.profile_pic) {
+            setProfilePic(data.profile_pic);
+          }
         }
-        if (data.profilePic) {
-          setProfilePic(data.profilePic);
-        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
       }
     };
     fetchUserData();
-  }, [currentUser]);
+  }, [appUser]);
 
-  // Update publicProfile in Firestore
+  // Update publicProfile in Supabase
   const handleTogglePublicProfile = async () => {
-    if (!currentUser) return;
-    const userDocRef = doc(db, 'users', currentUser.uid);
+    if (!appUser) return;
     try {
-      await updateDoc(userDocRef, { publicProfile: !publicProfile });
-      setPublicProfile(!publicProfile);
+      const newValue = !publicProfile;
+      const { error } = await supabase
+        .from('users')
+        .update({ public_profile: newValue })
+        .eq('id', appUser.id);
+
+      if (error) throw error;
+      setPublicProfile(newValue);
+      Alert.alert('Success', `Profile is now ${newValue ? 'public' : 'private'}`);
     } catch (error) {
+      console.error('Error updating profile visibility:', error);
       Alert.alert('Error', 'Could not update profile visibility.');
     }
   };
@@ -84,9 +126,9 @@ export default function ProfileScreen() {
     }
   };
 
-  // --- NEW FUNCTION TO UPLOAD IMAGE TO CLOUDINARY ---
+  // Upload profile picture to Supabase Storage
   const pickAndUpload = async () => {
-    if (!currentUser) {
+    if (!appUser) {
       Alert.alert('Not logged in', 'Please log in to upload a profile picture.');
       return;
     }
@@ -106,7 +148,6 @@ export default function ProfileScreen() {
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.7,
-        base64: true,          // needed for direct base64 upload
       });
 
       if (result.canceled || !result.assets || !result.assets.length) {
@@ -114,51 +155,19 @@ export default function ProfileScreen() {
       }
 
       const asset = result.assets[0];
-      if (!asset.base64) {
-        Alert.alert('Error', 'Could not read image data (no base64). Try another image.');
-        return;
-      }
-
       Alert.alert('Uploading', 'Uploading your profile picture...');
 
-      // Get signature from Cloud Function
-      const generateSignature = httpsCallable(functions, 'generateCloudinarySignature');
-      const signatureResult = await generateSignature({
-        timestamp: Math.round(new Date().getTime() / 1000),
-        folder: 'thevent-profiles',
-      });
+      // Upload to Supabase Storage
+      const photoURL = await uploadProfilePicture(asset.uri, appUser.id);
 
-      const { signature, timestamp, apiKey, cloudName, uploadPreset } = signatureResult.data;
+      // Update user profile in database
+      const { error } = await supabase
+        .from('users')
+        .update({ profile_pic: photoURL })
+        .eq('id', appUser.id);
 
-      // Upload to Cloudinary with signature
-      const mime = asset.mimeType || 'image/jpeg';
-      const dataUrl = `data:${mime};base64,${asset.base64}`;
+      if (error) throw error;
 
-      const formData = new FormData();
-      formData.append('file', dataUrl);
-      formData.append('upload_preset', uploadPreset);
-      formData.append('timestamp', timestamp);
-      formData.append('signature', signature);
-      formData.append('api_key', apiKey);
-      formData.append('folder', 'thevent-profiles');
-
-      const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
-      const response = await fetch(CLOUDINARY_UPLOAD_URL, {
-        method: 'POST',
-        body: formData,
-      });
-
-      const responseData = await response.json();
-
-      if (!response.ok || !responseData.secure_url) {
-        const errMsg =
-          (responseData.error && responseData.error.message) ||
-          'Unknown upload error (no secure_url). Check preset / cloud name.';
-        throw new Error(errMsg);
-      }
-
-      const photoURL = responseData.secure_url;
-      await updateDoc(doc(db, 'users', currentUser.uid), { profilePic: photoURL });
       setProfilePic(photoURL);
       Alert.alert('Success', 'Profile picture uploaded!');
     } catch (err) {
@@ -219,9 +228,9 @@ export default function ProfileScreen() {
           </View>
         )}
         <Text style={[styles.username, { color: colors.text }]}>Username: {appUser.username}</Text>
-        <Text style={[styles.uid, { color: colors.placeholder }]}>User ID: {currentUser.uid}</Text>
+        <Text style={[styles.uid, { color: colors.placeholder }]}>User ID: {appUser.id}</Text>
 
-        {/* --- ADDED: Upload / Change Profile Picture Button --- */}
+        {/* Upload / Change Profile Picture Button */}
         <TouchableOpacity
           style={[styles.myPostsButton, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={pickAndUpload}

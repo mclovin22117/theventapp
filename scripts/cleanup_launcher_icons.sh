@@ -1,6 +1,6 @@
 #!/bin/bash
 
-RES_DIR="/home/babayaga/Documents/theventapp/android/app/src/main/res"
+RES_DIR="./android/app/src/main/res"
 ICON_PATTERNS=("ic_launcher*" "ic_launcher_foreground*" "ic_launcher_round*")
 
 echo "Cleaning up launcher icons from mipmap directories..."

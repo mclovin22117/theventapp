@@ -6,16 +6,15 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import Header from '../components/Header';
 import { useNavigation } from '@react-navigation/native';
-import { db, functions } from '../firebaseConfig';
-import { doc, collection, onSnapshot, query, where, updateDoc, getDoc } from 'firebase/firestore';
-import { httpsCallable } from 'firebase/functions';
+import { supabase } from '../supabaseConfig';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
+import { uploadProfilePicture } from '../utils/imageUpload';
 
-const APP_VERSION = '1.3.0';
-const ADMIN_EMAIL = 'capsprout2001@proton.me';
-const GITHUB_URL = 'https://github.com/mclovin22117/theventapp';
+const APP_VERSION = '2.0';
+const ADMIN_EMAIL = 'capsprout2001@proton.me'; // Replace with your contact email
+const GITHUB_URL = 'https://github.com/mclovin22117/theventapp'; // Replace with your repo
 
 export default function SettingsScreen() {
   const { appUser, currentUser, loading, logout } = useAuth();
@@ -41,46 +40,60 @@ export default function SettingsScreen() {
   };
 
   useEffect(() => {
-    if (!currentUser) return;
+    if (!appUser) return;
 
-    const q = query(
-      collection(db, 'notifications'),
-      where('recipientId', '==', currentUser.uid),
-      where('read', '==', false)
-    );
+    const fetchUnreadCount = async () => {
+      const { count, error } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('recipient_id', appUser.id)
+        .eq('read', false);
 
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      setUnreadNotifications(querySnapshot.size);
-    });
+      if (!error && count !== null) {
+        setUnreadNotifications(count);
+      }
+    };
 
-    return () => unsubscribe();
-  }, [currentUser]);
+    fetchUnreadCount();
+
+    // Subscribe to changes
+    const subscription = supabase
+      .channel('notifications_changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'notifications',
+        filter: `recipient_id=eq.${appUser.id}`
+      }, () => {
+        fetchUnreadCount();
+      })
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [appUser]);
 
   // Fetch publicProfile and profilePic settings on mount
   useEffect(() => {
-    const fetchUserData = async () => {
-      if (!currentUser) return;
-      const userDocRef = doc(db, 'users', currentUser.uid);
-      const userDoc = await getDoc(userDocRef);
-      if (userDoc.exists()) {
-        const data = userDoc.data();
-        if (data.publicProfile !== undefined) {
-          setPublicProfile(data.publicProfile);
-        }
-        if (data.profilePic) {
-          setProfilePic(data.profilePic);
-        }
+    if (appUser) {
+      setPublicProfile(appUser.public_profile !== false);
+      if (appUser.profile_pic) {
+        setProfilePic(appUser.profile_pic);
       }
-    };
-    fetchUserData();
-  }, [currentUser]);
+    }
+  }, [appUser]);
 
-  // Update publicProfile in Firestore
+  // Update publicProfile in Supabase
   const handleTogglePublicProfile = async () => {
-    if (!currentUser) return;
-    const userDocRef = doc(db, 'users', currentUser.uid);
+    if (!appUser) return;
     try {
-      await updateDoc(userDocRef, { publicProfile: !publicProfile });
+      const { error } = await supabase
+        .from('users')
+        .update({ public_profile: !publicProfile })
+        .eq('id', appUser.id);
+      
+      if (error) throw error;
       setPublicProfile(!publicProfile);
     } catch (error) {
       Alert.alert('Error', 'Could not update profile visibility.');
@@ -96,9 +109,9 @@ export default function SettingsScreen() {
     }
   };
 
-  // Upload image to Cloudinary
+  // Profile picture upload using Supabase Storage
   const pickAndUpload = async () => {
-    if (!currentUser) {
+    if (!appUser) {
       Alert.alert('Not logged in', 'Please log in to upload a profile picture.');
       return;
     }
@@ -115,68 +128,34 @@ export default function SettingsScreen() {
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes,
-        quality: 0.7,
         allowsEditing: true,
         aspect: [1, 1],
-        base64: true,
+        quality: 0.7,
       });
 
-      if (result.canceled) return;
-
-      const asset = result.assets[0];
-      if (!asset.base64) {
-        Alert.alert('Error', 'Could not read image data (no base64). Try another image.');
+      if (result.canceled || !result.assets || !result.assets.length) {
         return;
       }
 
+      const asset = result.assets[0];
       Alert.alert('Uploading', 'Uploading your profile picture...');
 
-      // Get signature from Cloud Function
-      const generateSignature = httpsCallable(functions, 'generateCloudinarySignature');
-      const signatureResult = await generateSignature({
-        timestamp: Math.round(new Date().getTime() / 1000),
-        folder: 'thevent-profiles',
-      });
+      // Upload to Supabase Storage
+      const photoURL = await uploadProfilePicture(asset.uri, appUser.id);
 
-      const { signature, timestamp, apiKey, cloudName, uploadPreset } = signatureResult.data;
+      // Update user profile in database
+      const { error } = await supabase
+        .from('users')
+        .update({ profile_pic: photoURL })
+        .eq('id', appUser.id);
 
-      // Upload to Cloudinary with signature
-      const mime = asset.mimeType || 'image/jpeg';
-      const dataUrl = `data:${mime};base64,${asset.base64}`;
+      if (error) throw error;
 
-      const formData = new FormData();
-      formData.append('file', dataUrl);
-      formData.append('upload_preset', uploadPreset);
-      formData.append('timestamp', timestamp);
-      formData.append('signature', signature);
-      formData.append('api_key', apiKey);
-      formData.append('folder', 'thevent-profiles');
-
-      const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
-      const response = await fetch(CLOUDINARY_UPLOAD_URL, {
-        method: 'POST',
-        body: formData,
-      });
-
-      const responseData = await response.json();
-
-      if (!response.ok || !responseData.secure_url) {
-        const errMsg =
-          (responseData.error && responseData.error.message) ||
-          'Unknown upload error (no secure_url). Check preset / cloud name.';
-        throw new Error(errMsg);
-      }
-
-      const cloudinaryUrl = responseData.secure_url;
-      setProfilePic(cloudinaryUrl);
-
-      const userDocRef = doc(db, 'users', currentUser.uid);
-      await updateDoc(userDocRef, { profilePic: cloudinaryUrl });
-
-      Alert.alert('Success', 'Profile picture updated!');
-    } catch (error) {
-      console.error('Image upload error:', error);
-      Alert.alert('Upload Failed', error.message);
+      setProfilePic(photoURL);
+      Alert.alert('Success', 'Profile picture uploaded!');
+    } catch (err) {
+      console.error('Upload error', err);
+      Alert.alert('Upload failed', err.message || 'Could not upload image. Please try again.');
     }
   };
 
@@ -293,7 +272,7 @@ export default function SettingsScreen() {
 
             <TouchableOpacity
               style={[styles.button, { backgroundColor: '#1f1f1f' }]}
-              onPress={() => navigation.navigate('UserPosts', { userId: currentUser.uid })}
+              onPress={() => navigation.navigate('UserPosts', { userId: appUser.id })}
             >
               <Text style={styles.buttonText}>View My Posts</Text>
             </TouchableOpacity>
@@ -337,7 +316,24 @@ export default function SettingsScreen() {
             <View style={styles.aboutSection}>
               <Text style={[styles.aboutTitle, { color: colors.text }]}>Privacy & Anonymity</Text>
               <Text style={[styles.paragraph, { color: colors.text }]}>
-                Your posts are anonymous to the community, but are linked to a unique User ID (UID) for moderation and account recovery. Only the platform admin can access this information, and it is never sold or used for advertising.
+                Your posts are anonymous to the community. Each user has a unique username and User ID for moderation purposes. Your posts are linked to your account, but your identity remains private to other users. We never sell your data or use it for advertising.
+              </Text>
+            </View>
+
+            <View style={styles.aboutSection}>
+              <Text style={[styles.aboutTitle, { color: colors.text }]}>Authentication</Text>
+              <Text style={[styles.paragraph, { color: colors.text }]}>
+                The Vent uses a simple username and password system. No real email is required—the app automatically generates an internal identifier for your account. This means maximum privacy: we don't collect or store any personal contact information.
+              </Text>
+              <Text style={[styles.paragraph, { color: colors.text }]}>
+                Important: Keep your username and password safe! Since no email is stored, we cannot help you recover your account if you forget your credentials.
+              </Text>
+            </View>
+
+            <View style={styles.aboutSection}>
+              <Text style={[styles.aboutTitle, { color: colors.text }]}>Open Source</Text>
+              <Text style={[styles.paragraph, { color: colors.text }]}>
+                The Vent is 100% free and open source, built with Supabase (PostgreSQL). The entire codebase is available on GitHub for transparency and community contributions.
               </Text>
             </View>
 
@@ -363,6 +359,13 @@ export default function SettingsScreen() {
               onPress={handleGithubPress}
             >
               <Text style={[styles.buttonText, { color: colors.text }]}>View on GitHub</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: '#FF6B35', marginTop: 8 }]}
+              onPress={() => navigation.navigate('Support')}
+            >
+              <Text style={[styles.buttonText, { color: '#ffffff' }]}>☕ Support Me</Text>
             </TouchableOpacity>
 
             <Text style={[styles.footer, { color: colors.placeholder }]}>Mclovin without a last name</Text>

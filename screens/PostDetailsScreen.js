@@ -17,77 +17,18 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { db } from '../firebaseConfig';
-import {
-  doc,
-  collection,
-  query,
-  where,
-  orderBy,
-  onSnapshot,
-  addDoc,
-  serverTimestamp,
-  getDocs,
-  getDoc,
-} from 'firebase/firestore';
+import { supabase } from '../supabaseConfig';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { categories } from '../utils/helpers';
 
-// This recursive function fetches all replies and their nested replies
-const fetchRepliesRecursively = async (collectionRef) => {
-  const q = query(collectionRef, orderBy('createdAt', 'desc'));
-  const querySnapshot = await getDocs(q);
-  const replies = [];
-
-  for (const docSnapshot of querySnapshot.docs) {
-    const replyData = { id: docSnapshot.id, ...docSnapshot.data() };
-    const nestedRepliesRef = collection(docSnapshot.ref, 'replies');
-    replyData.replies = await fetchRepliesRecursively(nestedRepliesRef);
-    replies.push(replyData);
-  }
-
-  return replies;
-};
-
-// Function to get a user's UID by their username
-const getUserIdByUsername = async (username) => {
-  if (!username) return null;
-  const usersRef = collection(db, 'users');
-  const q = query(usersRef, where('username', '==', username));
-  const querySnapshot = await getDocs(q);
-
-  if (!querySnapshot.empty) {
-    const userDoc = querySnapshot.docs[0];
-    return userDoc.id;
-  }
-  return null;
-};
-
 // Recursive Reply Item Component
 import { useRef, useState as useLocalState, useEffect as useLocalEffect } from 'react';
 const ReplyItem = ({ item, level, postId, onReplyPress }) => {
   const { colors } = useTheme();
   const marginLeft = level > 0 ? level * 10 + 10 : 0;
-  const [profilePic, setProfilePic] = useLocalState(item.profilePic || null);
-  const [anonymousId, setAnonymousId] = useLocalState(item.anonymousId || '🙂');
-
-  useLocalEffect(() => {
-    let ignore = false;
-    // Only fetch if missing or outdated
-    if (!item.profilePic || !item.anonymousId) {
-      getDoc(doc(db, 'users', item.userId)).then(snap => {
-        if (!ignore && snap.exists()) {
-          const data = snap.data();
-          if (!item.profilePic && data.profilePic) setProfilePic(data.profilePic);
-          if (!item.anonymousId && data.anonymousId) setAnonymousId(data.anonymousId);
-        }
-      });
-    }
-    return () => { ignore = true; };
-  }, [item.userId]);
 
   // Highlight tagged users in the text
   const renderTextWithTags = () => {
@@ -108,34 +49,27 @@ const ReplyItem = ({ item, level, postId, onReplyPress }) => {
   return (
     <View style={[styles.replyItemContainer, { marginLeft: marginLeft, borderLeftColor: colors.border }]}>
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 8 }}>
-        {profilePic ? (
-          <Image source={{ uri: profilePic }} style={{ width: 32, height: 32, borderRadius: 16 }} />
+        {item.user?.profile_pic ? (
+          <Image source={{ uri: item.user.profile_pic }} style={{ width: 32, height: 32, borderRadius: 16 }} />
         ) : (
           <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#444', alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ fontSize: 14 }}>{anonymousId}</Text>
+            <Text style={{ fontSize: 14 }}>{item.user?.emoji || '😊'}</Text>
           </View>
         )}
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <Text style={[styles.replyAuthor, { color: colors.primary }]}>{item.username}</Text>
-            {item.createdAt && (
+            <Text style={[styles.replyAuthor, { color: colors.primary }]}>{item.user?.username || 'Anonymous'}</Text>
+            {item.created_at && (
               <Text style={[styles.replyTimestamp, { color: colors.placeholder }]}>
-                {new Date(item.createdAt.toDate()).toLocaleString()}
+                {new Date(item.created_at).toLocaleString()}
               </Text>
             )}
           </View>
           <Text style={[styles.replyText, { color: colors.text }]}>
             {renderTextWithTags()}
           </Text>
-          <TouchableOpacity onPress={() => onReplyPress(item)} style={styles.nestedReplyButton}>
-            <Text style={[styles.nestedReplyButtonText, { color: colors.secondary }]}>Reply</Text>
-          </TouchableOpacity>
         </View>
       </View>
-      {/* Recursively render nested replies */}
-      {item.replies && item.replies.map(reply => (
-        <ReplyItem key={reply.id} item={reply} level={level + 1} postId={postId} onReplyPress={onReplyPress} />
-      ))}
     </View>
   );
 };
@@ -254,58 +188,110 @@ const PostDetailsScreen = () => {
       return;
     }
 
-    const postDocRef = doc(db, 'posts', postId);
-
-    const unsubscribePost = onSnapshot(postDocRef, (docSnapshot) => {
-      if (docSnapshot.exists()) {
-        setPost({ id: docSnapshot.id, ...docSnapshot.data() });
-      } else {
-        console.warn("Post does not exist:", postId);
-        setPost(null);
-        Alert.alert("Error", "The post you are trying to view does not exist.");
-        navigation.goBack();
-      }
-      setLoading(false);
-    }, (error) => {
-      console.error("Error fetching post:", error);
-      Alert.alert("Error", "Failed to load post details.");
-      setLoading(false);
-    });
-
-    const repliesCollectionRef = collection(db, 'posts', postId, 'replies');
-    const unsubscribeReplies = onSnapshot(repliesCollectionRef, async () => {
+    const fetchPostAndReplies = async () => {
       try {
-        const fetchedReplies = await fetchRepliesRecursively(repliesCollectionRef);
-        setReplies(fetchedReplies);
+        // Fetch post with user info
+        const { data: postData, error: postError } = await supabase
+          .from('posts')
+          .select(`
+            *,
+            users!posts_user_id_fkey (
+              id,
+              username,
+              emoji,
+              profile_pic
+            )
+          `)
+          .eq('id', postId)
+          .single();
+
+        if (postError) throw postError;
+
+        if (!postData) {
+          console.warn("Post does not exist:", postId);
+          setPost(null);
+          if (Platform.OS === 'web') {
+            alert("The post you are trying to view does not exist.");
+          } else {
+            Alert.alert("Error", "The post you are trying to view does not exist.");
+          }
+          navigation.goBack();
+          return;
+        }
+
+        setPost({ ...postData, user: postData.users });
+        setAuthorProfile(postData.users);
+
+        // Fetch replies with user info
+        const { data: repliesData, error: repliesError } = await supabase
+          .from('replies')
+          .select(`
+            *,
+            users!replies_user_id_fkey (
+              id,
+              username,
+              emoji,
+              profile_pic
+            )
+          `)
+          .eq('post_id', postId)
+          .order('created_at', { ascending: false });
+
+        if (repliesError) throw repliesError;
+
+        const repliesWithUser = repliesData.map(reply => ({
+          ...reply,
+          user: reply.users
+        }));
+
+        setReplies(repliesWithUser);
+        setLoading(false);
       } catch (error) {
-        console.error("Error fetching replies:", error);
-        Alert.alert("Error", "Failed to load replies.");
+        console.error("Error fetching post:", error);
+        if (Platform.OS === 'web') {
+          alert("Failed to load post details.");
+        } else {
+          Alert.alert("Error", "Failed to load post details.");
+        }
+        setLoading(false);
       }
-    });
+    };
+
+    fetchPostAndReplies();
+
+    // Set up real-time subscription for replies
+    const subscription = supabase
+      .channel(`post_${postId}_replies`)
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'replies',
+        filter: `post_id=eq.${postId}`
+      }, () => {
+        fetchPostAndReplies(); // Refetch when replies change
+      })
+      .subscribe();
 
     return () => {
-      unsubscribePost();
-      unsubscribeReplies();
+      subscription.unsubscribe();
     };
   }, [postId, navigation]);
 
-  // NEW: separate effect to subscribe to author profile (was incorrectly nested before)
-  useEffect(() => {
-    if (!post?.userId) return;
-    const uRef = doc(db, 'users', post.userId);
-    const unsub = onSnapshot(uRef, snap => {
-      if (snap.exists()) setAuthorProfile(snap.data());
-    });
-    return () => unsub();
-  }, [post?.userId]);
-
   const handleAddReply = async () => {
     if (!currentUser || !appUser) {
-      Alert.alert('Login Required', 'You must be logged in to reply.');
+      if (Platform.OS === 'web') {
+        alert('Login Required: You must be logged in to reply.');
+      } else {
+        Alert.alert('Login Required', 'You must be logged in to reply.');
+      }
       return;
     }
     if (!replyText.trim()) {
-      Alert.alert('Empty Reply', 'Please type your reply.');
+      if (Platform.OS === 'web') {
+        alert('Empty Reply: Please type your reply.');
+      } else {
+        Alert.alert('Empty Reply', 'Please type your reply.');
+      }
       return;
     }
     if (isReplying) return;
@@ -313,80 +299,47 @@ const PostDetailsScreen = () => {
     setIsReplying(true);
 
     try {
-      const repliesCollectionRef = parentReply
-        ? collection(db, 'posts', postId, 'replies', parentReply.id, 'replies')
-        : collection(db, 'posts', postId, 'replies');
+      // Insert reply into database
+      const { error: replyError } = await supabase
+        .from('replies')
+        .insert([
+          {
+            post_id: postId,
+            user_id: appUser.id,
+            text: replyText.trim(),
+            created_at: new Date().toISOString(),
+          }
+        ]);
 
-      const taggedUsernames = replyText.match(/@(\w+)/g) || [];
-      const taggedUserIds = [];
+      if (replyError) throw replyError;
 
-      for (const tag of taggedUsernames) {
-        const username = tag.substring(1); // Remove the @
-        const userId = await getUserIdByUsername(username);
-        if (userId && userId !== currentUser.uid) { // Check to make sure user isn't tagging themselves
-          taggedUserIds.push(userId);
-        }
-      }
-
-      await addDoc(repliesCollectionRef, {
-        userId: currentUser.uid,
-        username: appUser.username || appUser.anonymousId || 'Anonymous',
-        text: replyText.trim(),
-        createdAt: serverTimestamp(),
-        taggedUsers: taggedUserIds,
-        profilePic: appUser?.profilePic || null,
-        anonymousId: appUser?.anonymousId || '🙂',
-      });
       setReplyText('');
       setParentReply(null);
 
-      // Immediately refetch replies so UI updates without waiting for Firestore listener
-      const repliesCollectionTopLevel = collection(db, 'posts', postId, 'replies');
-      const fetchedReplies = await fetchRepliesRecursively(repliesCollectionTopLevel);
-      setReplies(fetchedReplies);
-
-      // Add a notification to the original post author
-      if (post && post.userId !== currentUser.uid) {
-        await addDoc(collection(db, 'notifications'), {
-          recipientId: post.userId,
-          type: 'reply',
-          postId: postId,
-          postText: post.text.substring(0, 50) + '...',
-          senderUsername: appUser.username || 'Anonymous',
-          read: false,
-          createdAt: serverTimestamp(),
-        });
-      }
-
-      // NEW: Notify parent reply author if replying to a reply (and not self or post author)
-      if (parentReply && parentReply.userId !== currentUser.uid && (!post || parentReply.userId !== post.userId)) {
-        await addDoc(collection(db, 'notifications'), {
-          recipientId: parentReply.userId,
-          type: 'reply-to-reply',
-          postId: postId,
-          postText: replyText.substring(0, 50) + '...',
-          senderUsername: appUser.username || 'Anonymous',
-          read: false,
-          createdAt: serverTimestamp(),
-        });
-      }
-
-      // Add notifications to tagged users
-      for (const taggedUserId of taggedUserIds) {
-        await addDoc(collection(db, 'notifications'), {
-          recipientId: taggedUserId,
-          type: 'mention',
-          postId: postId,
-          postText: replyText.substring(0, 50) + '...',
-          senderUsername: appUser.username || 'Anonymous',
-          read: false,
-          createdAt: serverTimestamp(),
-        });
+      // Create notification for post author (if not self)
+      if (post && post.user_id !== appUser.id) {
+        await supabase
+          .from('notifications')
+          .insert([
+            {
+              recipient_id: post.user_id,
+              sender_id: appUser.id,
+              post_id: postId,
+              type: 'reply',
+              post_text: post.text.substring(0, 50) + '...',
+              read: false,
+              created_at: new Date().toISOString(),
+            }
+          ]);
       }
       
     } catch (error) {
       console.error('Error adding reply:', error);
-      Alert.alert('Error', 'Failed to add reply.');
+      if (Platform.OS === 'web') {
+        alert('Failed to add reply.');
+      } else {
+        Alert.alert('Error', 'Failed to add reply.');
+      }
     } finally {
       setIsReplying(false);
     }
@@ -453,8 +406,8 @@ const PostDetailsScreen = () => {
           <FlatList
             style={{ flex: 1 }}
             ListHeaderComponent={() => {
-              const effectiveProfilePic = authorProfile?.profilePic || post.profilePic || null;
-              const effectiveAnonymous = post.anonymousId || authorProfile?.anonymousId || '🙂';
+              const effectiveProfilePic = post.user?.profile_pic || authorProfile?.profile_pic;
+              const effectiveAnonymous = post.user?.emoji || authorProfile?.emoji || '😊';
               const firstUrl = extractFirstUrl(post.text);
               const preview = firstUrl ? getLinkPreview(firstUrl) : null;
               return (
@@ -468,7 +421,7 @@ const PostDetailsScreen = () => {
                       </View>
                     )}
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.postDetailAuthor, { color: colors.primary }]}>{post.username}</Text>
+                      <Text style={[styles.postDetailAuthor, { color: colors.primary }]}>{post.user?.username || 'Anonymous'}</Text>
                       {effectiveProfilePic && (
                         <Text style={{ fontSize: 12, color: colors.placeholder }}>{effectiveAnonymous}</Text>
                       )}
@@ -540,9 +493,9 @@ const PostDetailsScreen = () => {
                       </Text>
                     </TouchableOpacity>
                   )}
-                  {post.createdAt && (
+                  {post.created_at && (
                     <Text style={[styles.postDetailTimestamp, { color: colors.placeholder }]}>
-                      {new Date(post.createdAt.toDate()).toLocaleString()}
+                      {new Date(post.created_at).toLocaleString()}
                     </Text>
                   )}
                   <Text style={[styles.repliesHeader, { color: colors.text }]}>Replies ({replies.length})</Text>

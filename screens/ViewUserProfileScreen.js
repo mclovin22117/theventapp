@@ -2,8 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet, Alert, Platform, Image, ScrollView, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
-import { db } from '../firebaseConfig';
-import { doc, getDoc, onSnapshot, collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
+import { supabase } from '../supabaseConfig';
 import { useFocusEffect } from '@react-navigation/native';
 import Header from '../components/Header';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,43 +22,74 @@ const ViewUserProfileScreen = ({ route }) => {
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
-    const userRef = doc(db, 'users', userId);
-    const unsub = onSnapshot(userRef, snapshot => {
-      if (snapshot.exists()) {
-        const data = snapshot.data();
-        setUser(data);
-        setDebugInfo(JSON.stringify({ userDoc: data }, null, 2));
-      } else {
+    const fetchUser = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', userId)
+          .single();
+
+        if (error) throw error;
+
+        if (data) {
+          setUser(data);
+          setDebugInfo(JSON.stringify({ userDoc: data }, null, 2));
+        } else {
+          setUser(null);
+          setDebugInfo('No user doc found');
+        }
+      } catch (error) {
+        console.error('Error loading user profile:', error);
+        Alert.alert('Error', 'Could not load user profile.');
         setUser(null);
-        setDebugInfo('No user doc found');
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    }, () => {
-      Alert.alert('Error', 'Could not load user profile.');
-      setUser(null);
-      setLoading(false);
-    });
-    return () => unsub();
+    };
+
+    fetchUser();
+
+    // Subscribe to real-time updates
+    const channel = supabase
+      .channel(`user_${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'users',
+          filter: `id=eq.${userId}`,
+        },
+        (payload) => {
+          if (payload.new) {
+            setUser(payload.new);
+            setDebugInfo(JSON.stringify({ userDoc: payload.new }, null, 2));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [userId]);
 
-  // Fallback: if no profilePic in user doc, try to grab from most recent post
+  // Fallback: if no profile_pic in user doc, try to grab from most recent post
   useEffect(() => {
     const fetchLatestPostPic = async () => {
-      if (!user || user.profilePic || checkedPostsForPic) return;
+      if (!user || user.profile_pic || checkedPostsForPic) return;
       try {
-        const postsRef = collection(db, 'posts');
-        const q = query(
-          postsRef,
-          where('userId', '==', userId),
-          orderBy('createdAt', 'desc'),
-          limit(1)
-        );
-        const snap = await getDocs(q);
-        if (!snap.empty) {
-          const data = snap.docs[0].data();
-          if (data.profilePic) {
-            setLatestPostPic(data.profilePic);
-          }
+        const { data, error } = await supabase
+          .from('posts')
+          .select('profile_pic')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (!error && data && data.profile_pic) {
+          setLatestPostPic(data.profile_pic);
         }
       } catch (_) {
         // silent
@@ -73,7 +103,7 @@ const ViewUserProfileScreen = ({ route }) => {
   // Refresh on screen focus to catch recently added profile pictures
   useFocusEffect(
     useCallback(() => {
-      if (user && user.profilePic) return;
+      if (user && user.profile_pic) return;
       setCheckedPostsForPic(false);
     }, [user])
   );
@@ -81,32 +111,41 @@ const ViewUserProfileScreen = ({ route }) => {
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      const snapshot = await getDoc(doc(db, 'users', userId));
-      if (snapshot.exists()) setUser(snapshot.data());
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (!error && data) {
+        setUser(data);
+      }
       // re-attempt post fallback on manual refresh
       setCheckedPostsForPic(false);
+    } catch (error) {
+      console.error('Error refreshing:', error);
     } finally {
       setRefreshing(false);
     }
   }, [userId]);
 
-  // Test if the profilePic URL (if present) is reachable
+  // Test if the profile_pic URL (if present) is reachable
   useEffect(() => {
     const test = async () => {
-      if (!user || !user.profilePic) {
+      if (!user || !user.profile_pic) {
         setImageReachable(null);
         return;
       }
       try {
         // Use HEAD if supported; fallback to GET
-        const res = await fetch(user.profilePic, { method: 'HEAD' }).catch(() => fetch(user.profilePic));
+        const res = await fetch(user.profile_pic, { method: 'HEAD' }).catch(() => fetch(user.profile_pic));
         setImageReachable(res.ok);
       } catch {
         setImageReachable(false);
       }
     };
     test();
-  }, [user?.profilePic]);
+  }, [user?.profile_pic]);
 
   if (loading) {
     return (
@@ -116,7 +155,7 @@ const ViewUserProfileScreen = ({ route }) => {
     );
   }
 
-  if (!user || user.publicProfile === false) {
+  if (!user || user.public_profile === false) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }}>
         <Header tagline="User Profile" headerBgColor="#1f1f1f" headerTextColor="white" taglineFontSize={20} showLogo={false} />
@@ -134,10 +173,10 @@ const ViewUserProfileScreen = ({ route }) => {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
         {/* Show profile picture if available, else fallback to emoji */}
-        {user.profilePic || latestPostPic ? (
+        {user.profile_pic || latestPostPic ? (
           <View style={{ marginBottom: 16 }}>
             <Image
-              source={{ uri: user.profilePic || latestPostPic }}
+              source={{ uri: user.profile_pic || latestPostPic }}
               style={{ width: 120, height: 120, borderRadius: 60, backgroundColor: '#222' }}
               onLoadStart={() => { setImgLoading(true); setImgError(false); }}
               onLoadEnd={() => setImgLoading(false)}
@@ -151,7 +190,7 @@ const ViewUserProfileScreen = ({ route }) => {
           </View>
         ) : (
           <View style={{ width: 120, height: 120, borderRadius: 60, backgroundColor: '#222', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-            <Text style={{ fontSize: 46 }}>{user.anonymousId || '🙂'}</Text>
+            <Text style={{ fontSize: 46 }}>{user.emoji || '🙂'}</Text>
           </View>
         )}
         <Text style={{ color: colors.text, fontSize: 24, fontWeight: '700' }}>{user.username}</Text>
@@ -159,7 +198,7 @@ const ViewUserProfileScreen = ({ route }) => {
         {/* DEBUG BLOCK (remove after confirming) */}
         <View style={{ marginTop: 14, alignSelf: 'stretch', backgroundColor: '#222', padding: 10, borderRadius: 8 }}>
           <Text style={{ color: colors.placeholder, fontSize: 12, fontWeight: 'bold' }}>Debug:</Text>
-          <Text style={{ color: colors.placeholder, fontSize: 11 }}>profilePic field: {String(user.profilePic || null)}</Text>
+          <Text style={{ color: colors.placeholder, fontSize: 11 }}>profile_pic field: {String(user.profile_pic || null)}</Text>
           <Text style={{ color: colors.placeholder, fontSize: 11 }}>latestPostPic fallback: {String(latestPostPic || null)}</Text>
           <Text style={{ color: colors.placeholder, fontSize: 11 }}>imageReachable: {imageReachable === null ? 'n/a' : imageReachable ? 'yes' : 'no'}</Text>
           <Text style={{ color: colors.placeholder, fontSize: 11, marginTop: 6 }} selectable>

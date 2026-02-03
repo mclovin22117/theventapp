@@ -12,16 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import { db } from '../firebaseConfig';
-import {
-  collection,
-  query,
-  where,
-  onSnapshot,
-  doc,
-  updateDoc,
-  orderBy,
-} from 'firebase/firestore';
+import { supabase } from '../supabaseConfig';
 import Header from '../components/Header';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -30,44 +21,78 @@ const NotificationScreen = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const { colors } = useTheme();
-  const { currentUser } = useAuth();
+  const { appUser } = useAuth();
   const navigation = useNavigation();
 
   useEffect(() => {
-    if (!currentUser) {
+    if (!appUser) {
       setLoading(false);
       return;
     }
 
-    // Query for notifications where the recipientId matches the current user's UID
-    const q = query(
-      collection(db, 'notifications'),
-      where('recipientId', '==', currentUser.uid),
-      orderBy('createdAt', 'desc')
-    );
+    fetchNotifications();
 
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const fetchedNotifications = [];
-      querySnapshot.forEach((doc) => {
-        fetchedNotifications.push({ id: doc.id, ...doc.data() });
-      });
-      setNotifications(fetchedNotifications);
+    // Subscribe to real-time notifications
+    const channel = supabase
+      .channel('notifications_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notifications',
+          filter: `recipient_id=eq.${appUser.id}`,
+        },
+        () => {
+          fetchNotifications();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [appUser]);
+
+  const fetchNotifications = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select(`
+          *,
+          sender:users!notifications_sender_id_fkey (
+            id,
+            username,
+            emoji
+          ),
+          post:posts!notifications_post_id_fkey (
+            id,
+            text
+          )
+        `)
+        .eq('recipient_id', appUser.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      setNotifications(data || []);
       setLoading(false);
-    }, (error) => {
+    } catch (error) {
       console.error('Error fetching notifications:', error);
       setLoading(false);
       Alert.alert('Error', 'Failed to load notifications.');
-    });
-
-    return () => unsubscribe();
-  }, [currentUser]);
+    }
+  };
 
   const handleNotificationPress = async (notificationId, postId) => {
     try {
-      const notificationRef = doc(db, 'notifications', notificationId);
-      await updateDoc(notificationRef, {
-        read: true,
-      });
+      const { error } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('id', notificationId);
+
+      if (error) throw error;
+
       navigation.navigate('PostDetails', { postId });
     } catch (error) {
       console.error('Error marking notification as read:', error);
@@ -84,13 +109,18 @@ const NotificationScreen = () => {
           opacity: item.read ? 0.6 : 1,
         },
       ]}
-      onPress={() => handleNotificationPress(item.id, item.postId)}
+      onPress={() => handleNotificationPress(item.id, item.post_id)}
     >
       <Text style={[styles.notificationText, { color: item.read ? colors.text : 'white' }]}>
-        <Text style={{ fontWeight: 'bold' }}>{item.senderUsername}</Text> replied to your thought: "{item.postText}"
+        <Text style={{ fontWeight: 'bold' }}>
+          {item.sender?.emoji} {item.sender?.username}
+        </Text>
+        {' '}
+        {item.type === 'reply' ? 'replied to your thought' : 'liked your thought'}
+        {item.post?.text ? `: "${item.post.text.substring(0, 50)}${item.post.text.length > 50 ? '...' : ''}"` : ''}
       </Text>
       <Text style={[styles.notificationTimestamp, { color: item.read ? colors.placeholder : 'white' }]}>
-        {item.createdAt?.toDate().toLocaleString()}
+        {item.created_at ? new Date(item.created_at).toLocaleString() : ''}
       </Text>
     </TouchableOpacity>
   );

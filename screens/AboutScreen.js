@@ -1,15 +1,15 @@
 // screens/AboutScreen.js
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Linking, Image, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Linking, Image, Platform, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Header from '../components/Header';
 import { useTheme } from '../context/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 
-const APP_VERSION = '1.3.5';
-const ADMIN_EMAIL = 'capsprout2001@proton.me';
-const GITHUB_URL = 'https://github.com/reetik-rana/theventapp';
+const APP_VERSION = '2.0';
+const ADMIN_EMAIL = 'admin@example.com'; // Replace with your contact email
+const GITHUB_URL = 'https://github.com/yourusername/theventapp'; // Replace with your repo
 
 const AboutScreen = () => {
   const { colors } = useTheme();
@@ -70,17 +70,24 @@ const AboutScreen = () => {
             <View style={styles.section}>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>Privacy & Anonymity</Text>
               <Text style={[styles.paragraph, { color: colors.text }]}>
-                Your posts are anonymous to the community, but are linked to a unique User ID (UID) for moderation and account recovery. Only the platform admin can access this information, and it is never sold or used for advertising.
+                Your posts are anonymous to the community. Each user has a unique username and User ID for moderation purposes. Your posts are linked to your account, but your identity remains private to other users. We never sell your data or use it for advertising.
               </Text>
             </View>
 
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Email Authentication</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Authentication</Text>
               <Text style={[styles.paragraph, { color: colors.text }]}>
-                We use email authentication to ensure each user has a unique account and to prevent spam. Your email is only used for account verification and recovery. We do not send promotional emails or newsletters, and your data is never sold.
+                The Vent uses a simple username and password system. No real email is required—the app automatically generates an internal identifier for your account. This means maximum privacy: we don't collect or store any personal contact information.
               </Text>
               <Text style={[styles.paragraph, { color: colors.text }]}>
-                Forgot your username or password? Email <Text style={{ fontWeight: 'bold', color: colors.primary }} onPress={handleContactPress}>{ADMIN_EMAIL}</Text> for help. For maximum anonymity, you may use a temporary or fake email for signup/login.
+                Important: Keep your username and password safe! Since no email is stored, we cannot help you recover your account if you forget your credentials.
+              </Text>
+            </View>
+
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Open Source</Text>
+              <Text style={[styles.paragraph, { color: colors.text }]}>
+                The Vent is 100% free and open source, built with Supabase (PostgreSQL). The entire codebase is available on GitHub for transparency and community contributions. No vendor lock-in, no proprietary services.
               </Text>
             </View>
 
@@ -90,6 +97,20 @@ const AboutScreen = () => {
                 Have suggestions/want to contribute or need support? Reach out at <Text style={{ fontWeight: 'bold', color: colors.primary }} onPress={handleContactPress}>{ADMIN_EMAIL}</Text>.
               </Text>
             </View>
+
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: colors.border }]}
+              onPress={handleGithubPress}
+            >
+              <Text style={[styles.buttonText, { color: colors.text }]}>View on GitHub</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: '#FF6B35' }]}
+              onPress={() => navigation.navigate('Support')}
+            >
+              <Text style={[styles.buttonText, { color: '#ffffff' }]}>☕ Support Me</Text>
+            </TouchableOpacity>
 
             <Text style={[styles.footer, { color: colors.placeholder }]}>Made with ❤️ by a Tech Enthusiast</Text>
           </View>
@@ -148,6 +169,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 14,
     marginBottom: 20,
+  },
+  button: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 12,
+    marginHorizontal: 16,
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

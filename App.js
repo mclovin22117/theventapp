@@ -17,6 +17,7 @@ import SplashScreen from './screens/SplashScreen';
 import PostDetailsScreen from './screens/PostDetailsScreen';
 import NotificationScreen from './screens/NotificationScreen';
 import UserPostsScreen from './screens/UserPostsScreen';
+import SupportScreen from './screens/SupportScreen';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
@@ -63,6 +64,11 @@ function AppNavigator() {
       <Stack.Screen
         name="ViewUserProfile"
         component={ViewUserProfile}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Support"
+        component={SupportScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>

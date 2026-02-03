@@ -14,9 +14,8 @@ expo-env.d.ts
 # Environment variables & secrets
 .env
 .env*.local
-firebaseConfig.js
-cloudinaryConfig.js
 supabaseConfig.js
+minioConfig.js
 
 # Native build artifacts
 *.orig.*
@@ -41,13 +40,6 @@ ios/
 # Logs
 *.log
 
-# Firebase
-.firebase/
-firebase-debug.log
-firestore-debug.log
-ui-debug.log
-database-debug.log
-
 # IDE
 .vscode/
 .idea/
@@ -58,10 +50,6 @@ database-debug.log
 # Build outputs
 build/
 out/
-
-# Firebase functions (keep notify folder but ignore its node_modules)
-notify/node_modules/
-notify/.env
 
 # Temporary files
 tmp/

@@ -170,7 +170,50 @@ CREATE POLICY "Users can update own notifications" ON notifications FOR UPDATE U
 3. Disable email confirmation (Settings → Auth → Email Auth → Confirm email = OFF) for easier testing
 4. Later enable it for production
 
-## Step 6: Test Your Setup
+## Step 6: Set Up Storage for Profile Pictures
+
+1. Go to **Storage** in your Supabase dashboard
+2. Click **"New bucket"**
+3. Bucket name: `profile-pictures`
+4. **Public bucket**: Toggle ON (so profile pictures are publicly accessible)
+5. Click **"Create bucket"**
+
+### Storage Policies (Optional - for more control):
+
+Go to **Storage → Policies** for the `profile-pictures` bucket:
+
+```sql
+-- Allow anyone to read profile pictures
+CREATE POLICY "Public Access"
+ON storage.objects FOR SELECT
+USING ( bucket_id = 'profile-pictures' );
+
+-- Allow authenticated users to upload their own profile pictures
+CREATE POLICY "Authenticated users can upload profile pictures"
+ON storage.objects FOR INSERT
+WITH CHECK (
+  bucket_id = 'profile-pictures' AND
+  auth.role() = 'authenticated'
+);
+
+-- Allow users to update their own profile pictures
+CREATE POLICY "Users can update own profile pictures"
+ON storage.objects FOR UPDATE
+USING (
+  bucket_id = 'profile-pictures' AND
+  auth.role() = 'authenticated'
+);
+
+-- Allow users to delete their own profile pictures
+CREATE POLICY "Users can delete own profile pictures"
+ON storage.objects FOR DELETE
+USING (
+  bucket_id = 'profile-pictures' AND
+  auth.role() = 'authenticated'
+);
+```
+
+## Step 7: Test Your Setup
 
 After completing the migration, test:
 - [ ] User registration
@@ -180,6 +223,7 @@ After completing the migration, test:
 - [ ] Reply functionality
 - [ ] Notifications
 - [ ] Profile updates
+- [ ] Profile picture upload
 
 ## Notes
 
@@ -187,3 +231,4 @@ After completing the migration, test:
 - **Self-hosting**: Use Docker for completely free unlimited usage
 - **API Keys**: The anon key is safe for client-side use (RLS protects your data)
 - **Real-time**: Supabase supports real-time subscriptions like Firebase
+- **Storage**: Supabase Storage is S3-compatible and open source (no Cloudinary needed!)

@@ -1,38 +1,48 @@
-The Vent
+# The Vent
+
 This is a simple, anonymous thought-sharing app built for a small community.
+
+## 🎉 MAJOR UPDATE - Now Fully Open Source!
+
+**Version 2.0** represents a complete migration to a fully open-source stack:
+
+- ✅ **No more Firebase** → Migrated to **Supabase** (PostgreSQL)
+- ✅ **No more Cloudinary** → Using **Supabase Storage**
+- ✅ **No credit card required** for development
+- ✅ **Can be self-hosted** completely for free
+- ✅ **No vendor lock-in** - all tools are open source
+
+### What Changed?
+
+| Before (v1.x) | After (v2.0) |
+|---------------|--------------|
+| Firebase Firestore | Supabase PostgreSQL |
+| Firebase Auth | Supabase Auth |
+| Firebase Cloud Functions | PostgreSQL Triggers |
+| Cloudinary (image hosting) | Supabase Storage |
+| **Requires paid plans** | **100% Free tier** |
 
 > **⚠️ Important Notice**
 > 
-> This app requires **Firebase** and **Cloudinary** to function. If you want to build and run this app yourself, you **must**:
+> This app now uses **Supabase** (fully open source!) for everything. If you want to build and run this app yourself, you **must**:
 > 
-> ### Firebase Setup:
-> 1. Create your own Firebase project at [Firebase Console](https://console.firebase.google.com/)
-> 2. Enable **Email/Password Authentication** in Firebase Console
-> 3. Enable **Firestore Database** in Firebase Console
-> 4. Enable **App Check** with reCAPTCHA v3 (for web)
-> 5. Copy `firebaseConfig.example.js` to `firebaseConfig.js` and replace with your Firebase credentials
-> 6. Update the Firestore security rules in Firebase Console using the `firestore.rules` file
+> ### Supabase Setup:
+> 1. Create your own Supabase project at [Supabase Dashboard](https://supabase.com/dashboard)
+> 2. Follow the complete setup guide in `SUPABASE_SETUP.md`
+> 3. Copy `supabaseConfig.example.js` to `supabaseConfig.js` and add your credentials
+> 4. Set up the database schema (tables, RLS policies, triggers)
+> 5. Create a Storage bucket named `profile-picture` for profile pictures
+> 6. Enable Email authentication
 > 
-> ### Cloudinary Setup (for profile pictures):
-> 1. Create a free account at [Cloudinary](https://cloudinary.com/)
-> 2. Get your **Cloud Name**, **API Key**, and **API Secret** from the Cloudinary dashboard
-> 3. Create an **upload preset** in Cloudinary Settings → Upload
-> 4. Copy `cloudinaryConfig.example.js` to `cloudinaryConfig.js` and replace with your Cloudinary credentials
-> 5. Set Firebase Cloud Function environment variables:
->    ```bash
->    cd notify
->    firebase functions:config:set \
->      cloudinary.cloud_name="YOUR_CLOUD_NAME" \
->      cloudinary.api_key="YOUR_API_KEY" \
->      cloudinary.api_secret="YOUR_API_SECRET" \
->      cloudinary.upload_preset="YOUR_UPLOAD_PRESET"
->    ```
-> 6. Deploy the Cloud Functions:
->    ```bash
->    firebase deploy --only functions
->    ```
+> **Why Supabase?**
+> - ✅ Fully open source (can self-host)
+> - ✅ No credit card required for free tier
+> - ✅ PostgreSQL database (more powerful than Firestore)
+> - ✅ Built-in Storage (no need for Cloudinary)
+> - ✅ Real-time subscriptions
+> - ✅ Row Level Security (RLS)
 > 
-> **The current Firebase and Cloudinary configurations in this repository are for the production app and should NOT be used for your own deployments.**
+> **The current Supabase configuration in this repository is for the production app and should NOT be used for your own deployments.**
 
 ## � Screenshots
 
@@ -52,7 +62,7 @@ This is a simple, anonymous thought-sharing app built for a small community.
 ## �📱 Download & Install
 
 ### For Android Users:
-1. **Download the APK**: Go to the [Releases](https://github.com/reetik-rana/theventapp/releases) page
+1. **Download the APK**: Go to the [Releases](https://github.com/yourusername/theventapp/releases) page
 2. **Find the latest release** and download the `.apk` file
 3. **Install the APK**:
    - Open the downloaded APK file on your Android device
@@ -70,19 +80,27 @@ This is a simple, anonymous thought-sharing app built for a small community.
 ## -- Our Mission --
 The Vent provides a space for users to share their thoughts, feelings, and opinions openly and honestly, without the pressure of a public identity. Our goal is to foster a supportive environment where authenticity is encouraged.
 
--- Key Features --
-Pseudo-Anonymous Posting: Share your thoughts using a custom username(don't include your real name) and an anonymous emoji. Other users cannot see your real name or personal information.
+## -- Key Features --
+- **Pseudo-Anonymous Posting**: Share your thoughts using a custom username (don't include your real name) and an emoji. Other users cannot see your real information.
+- **Profile Pictures**: Upload custom profile pictures stored securely in Supabase Storage
+- **Simple & Secure**: A straightforward interface for posting and replying to thoughts
+- **Like & Reply**: Engage with posts by liking them or adding your own anonymous replies
+- **Real-time Updates**: See new posts and replies instantly with Supabase real-time subscriptions
+- **Fully Open Source**: Built with open-source technologies - Supabase (PostgreSQL), React Native, Expo
 
-Simple & Secure: A straightforward interface for posting and replying to thoughts. The app is built using modern technologies to ensure a smooth and secure experience.
+## -- Technical Details & Anonymity --
+- **User Authentication**: Email-based authentication via Supabase Auth
+- **Data Storage**: All data stored in PostgreSQL database with Row Level Security (RLS)
+- **Privacy**: Posts are linked to User IDs but usernames remain pseudonymous
+- **Transparency**: While your identity is kept private from other users, administrators can view backend data
 
-Like & Reply: Engage with posts by liking them or adding your own anonymous replies.
-
--- Technical Details & Anonymity --
-User Authentication: The app uses Google authentication to create a user account, which is linked to a unique User ID (UID) in our backend database.
-
-Data Storage: When a post is created, it is associated with your unique User ID in the backend.
-
-Transparency: While your identity is kept private from other users, anyone with administrative access to the app's backend can view a post's User ID and link it to the corresponding user account. We do not use this information to track or identify individual users.
+## -- Tech Stack --
+- **Frontend**: React Native + Expo
+- **Backend**: Supabase (PostgreSQL)
+- **Authentication**: Supabase Auth
+- **Storage**: Supabase Storage (for profile pictures)
+- **Real-time**: Supabase real-time subscriptions
+- **Database**: PostgreSQL with Row Level Security
 
 ---
 
@@ -94,16 +112,22 @@ If you'd like to build the app yourself:
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/reetik-rana/theventapp.git
+   git clone https://github.com/yourusername/theventapp.git
    cd theventapp
    ```
 
-2. **Install dependencies**:
+2. **Set up Supabase** (See `SUPABASE_SETUP.md` for detailed instructions):
+   - Create a Supabase project
+   - Copy `supabaseConfig.example.js` to `supabaseConfig.js`
+   - Add your Supabase credentials
+   - Run the SQL setup scripts
+
+3. **Install dependencies**:
    ```bash
    npm install
    ```
 
-3. **Build for Android**:
+4. **Build for Android**:
    ```bash
    npm run android:build
    # or

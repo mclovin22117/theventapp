@@ -62,7 +62,7 @@ This is a simple, anonymous thought-sharing app built for a small community.
 ## �📱 Download & Install
 
 ### For Android Users:
-1. **Download the APK**: Go to the [Releases](https://github.com/yourusername/theventapp/releases) page
+1. **Download the APK**: Go to the [Releases](https://github.com/mclovin22117/theventapp/releases) page
 2. **Find the latest release** and download the `.apk` file
 3. **Install the APK**:
    - Open the downloaded APK file on your Android device

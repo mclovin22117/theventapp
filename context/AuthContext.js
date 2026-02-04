@@ -17,35 +17,40 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Try to restore session from AsyncStorage first (faster for Android)
-    const restoreSession = async () => {
+    let mounted = true;
+
+    // Initialize auth session
+    const initializeAuth = async () => {
       try {
-        const storedUser = await AsyncStorage.getItem('appUser');
-        if (storedUser) {
-          const userData = JSON.parse(storedUser);
-          setAppUser(userData);
+        // Get session from Supabase (will automatically load from AsyncStorage)
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
+
+        if (session?.user) {
+          await handleAuthChange(session.user);
+        } else {
+          setLoading(false);
         }
       } catch (err) {
-        console.error('Error restoring session:', err);
+        console.error('Error initializing auth:', err);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
-    restoreSession();
-
-    // Get initial session from Supabase
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        handleAuthChange(session.user);
-      } else {
-        setLoading(false);
-      }
-    });
+    initializeAuth();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
+      
+      console.log('Auth state changed:', event);
+      
       if (session?.user) {
         await handleAuthChange(session.user);
-      } else {
+      } else if (event === 'SIGNED_OUT') {
         setCurrentUser(null);
         setAppUser(null);
         await AsyncStorage.removeItem('appUser');
@@ -53,7 +58,10 @@ export const AuthProvider = ({ children }) => {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const handleAuthChange = async (user) => {

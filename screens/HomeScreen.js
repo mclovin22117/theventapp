@@ -241,34 +241,52 @@ const HomeScreen = () => {
 							profile_pic
 						)
 					`)
-					.order('created_at', { ascending: false });
+					.order('created_at', { ascending: false })
+					.limit(50); // Limit initial load to 50 posts
 
 				if (error) throw error;
 
-				// Fetch likes and replies counts for each post
-				const postsWithActivity = await Promise.all(
-					postsData.map(async (post) => {
-						// Get likes count and check if current user liked
-						const { data: likes, error: likesError } = await supabase
-							.from('likes')
-							.select('user_id')
-							.eq('post_id', post.id);
+				if (!postsData || postsData.length === 0) {
+					setPosts([]);
+					setLoading(false);
+					return;
+				}
 
-						const likeCount = likes?.length || 0;
-						const isLiked = currentUser && likes ? likes.some(like => like.user_id === appUser?.id) : false;
+				// Get all post IDs
+				const postIds = postsData.map(p => p.id);
 
-						// Get replies count (already calculated by trigger)
-						const replyCount = post.replies_count || 0;
+				// Fetch ALL likes for these posts in ONE query (massive performance improvement)
+				const { data: allLikes, error: likesError } = await supabase
+					.from('likes')
+					.select('post_id, user_id')
+					.in('post_id', postIds);
 
-						return {
-							...post,
-							user: post.users,
-							likeCount,
-							replyCount,
-							isLiked
-						};
-					})
-				);
+				if (likesError) console.error('Error fetching likes:', likesError);
+
+				// Build a map of post_id -> likes for quick lookup
+				const likesMap = {};
+				(allLikes || []).forEach(like => {
+					if (!likesMap[like.post_id]) {
+						likesMap[like.post_id] = [];
+					}
+					likesMap[like.post_id].push(like.user_id);
+				});
+
+				// Process posts with cached likes data
+				const postsWithActivity = postsData.map(post => {
+					const postLikes = likesMap[post.id] || [];
+					const likeCount = postLikes.length;
+					const isLiked = currentUser && appUser ? postLikes.includes(appUser.id) : false;
+					const replyCount = post.replies_count || 0;
+
+					return {
+						...post,
+						user: post.users,
+						likeCount,
+						replyCount,
+						isLiked
+					};
+				});
 
 				setPosts(postsWithActivity);
 

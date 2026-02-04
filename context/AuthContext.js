@@ -17,7 +17,22 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Get initial session
+    // Try to restore session from AsyncStorage first (faster for Android)
+    const restoreSession = async () => {
+      try {
+        const storedUser = await AsyncStorage.getItem('appUser');
+        if (storedUser) {
+          const userData = JSON.parse(storedUser);
+          setAppUser(userData);
+        }
+      } catch (err) {
+        console.error('Error restoring session:', err);
+      }
+    };
+
+    restoreSession();
+
+    // Get initial session from Supabase
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         handleAuthChange(session.user);

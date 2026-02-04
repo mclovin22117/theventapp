@@ -14,27 +14,29 @@ const SupportScreen = () => {
   const navigation = useNavigation();
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={{ flex: 1 }}>
-        <View style={{ height: Platform.OS === 'web' ? 8 : Math.max(insets.top, 12) }} />
-        <View style={styles.headerContainer}>
-          <TouchableOpacity 
-            onPress={() => navigation.goBack()} 
-            style={styles.backButton}
-          >
-            <Ionicons name="arrow-back" size={24} color="white" />
-          </TouchableOpacity>
-          <Header
-            tagline="Support The Vent"
-            headerBgColor="#1f1f1f"
-            headerTextColor="white"
-            taglineFontSize={20}
-            showLogo={false}
-            centerTagline={true}
-          />
-        </View>
-        <View style={{ height: Platform.OS === 'web' ? 10 : 8 }} />
-        <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: 32 }}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
+      <View style={styles.headerContainer}>
+        <TouchableOpacity 
+          onPress={() => navigation.goBack()} 
+          style={styles.backButton}
+        >
+          <Ionicons name="arrow-back" size={24} color="white" />
+        </TouchableOpacity>
+        <Header
+          tagline="Support The Vent"
+          headerBgColor="#1f1f1f"
+          headerTextColor="white"
+          taglineFontSize={20}
+          showLogo={false}
+          centerTagline={true}
+        />
+      </View>
+      <ScrollView 
+        style={styles.scrollView} 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={true}
+        bounces={true}
+      >
           <View style={styles.content}>
             <Image source={require('../assets/ventlogo.png')} style={styles.logo} />
             
@@ -68,7 +70,6 @@ const SupportScreen = () => {
             </Text>
           </View>
         </ScrollView>
-      </View>
     </SafeAreaView>
   );
 };
@@ -79,6 +80,7 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     position: 'relative',
+    zIndex: 1,
   },
   backButton: {
     position: 'absolute',
@@ -89,6 +91,10 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 40,
+    minHeight: '100%',
   },
   content: {
     padding: 20,

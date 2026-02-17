@@ -1,7 +1,8 @@
 # The Vent
 
-This is a simple, anonymous thought-sharing app built for a small community.
 
+This is a simple, anonymous thought-sharing app built for a small community.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ## 🎉 MAJOR UPDATE - Now Fully Open Source!
 
 **Version 2.0** represents a complete migration to a fully open-source stack:

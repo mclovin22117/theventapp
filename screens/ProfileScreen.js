@@ -29,6 +29,8 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     if (!appUser) return;
+    fetchNotifications();
+  }, [appUser]);
 
     fetchNotifications();
 

@@ -7,9 +7,9 @@ import { useTheme } from '../context/ThemeContext';
 import Header from '../components/Header';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../supabaseConfig';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as ImagePicker from 'expo-image-picker';
+import { launchImageLibrary } from 'react-native-image-picker';
 import { uploadProfilePicture } from '../utils/imageUpload';
 
 const APP_VERSION = '2.0';
@@ -116,24 +116,15 @@ export default function SettingsScreen() {
       return;
     }
     try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permission.granted) {
-        Alert.alert('Permission required', 'Permission to access photos is required.');
-        return;
-      }
-
-      const mediaTypes =
-        (ImagePicker.MediaType && ImagePicker.MediaType.Images) ||
-        (ImagePicker.MediaTypeOptions && ImagePicker.MediaTypeOptions.Images);
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes,
-        allowsEditing: true,
-        aspect: [1, 1],
+      const result = await launchImageLibrary({
+        mediaType: 'photo',
+        maxWidth: 1024,
+        maxHeight: 1024,
         quality: 0.7,
+        includeBase64: false,
       });
 
-      if (result.canceled || !result.assets || !result.assets.length) {
+      if (result.didCancel || !result.assets || !result.assets.length) {
         return;
       }
 
@@ -188,7 +179,7 @@ export default function SettingsScreen() {
             style={styles.backButton}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Ionicons name="arrow-back" size={24} color="white" />
+            <Icon name="arrow-back" size={24} color="white" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Settings & About</Text>
           <View style={{ width: 40 }} />
@@ -210,7 +201,7 @@ export default function SettingsScreen() {
                 <Image source={{ uri: profilePic }} style={styles.profilePic} />
               ) : (
                 <View style={[styles.profilePicPlaceholder, { backgroundColor: colors.border }]}>
-                  <Ionicons name="person" size={50} color={colors.placeholder} />
+                  <Icon name="person" size={50} color={colors.placeholder} />
                 </View>
               )}
               <TouchableOpacity onPress={pickAndUpload} style={[styles.uploadButton, { backgroundColor: '#1f1f1f' }]}>
@@ -259,7 +250,7 @@ export default function SettingsScreen() {
               style={[styles.notificationsButton, { backgroundColor: colors.card, borderColor: colors.border }]}
               onPress={() => navigation.navigate('Notifications')}
             >
-              <Ionicons name="notifications" size={24} color={colors.text} />
+              <Icon name="notifications" size={24} color={colors.text} />
               <Text style={[styles.notificationsButtonText, { color: colors.text }]}>
                 Notifications
               </Text>

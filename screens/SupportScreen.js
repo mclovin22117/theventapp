@@ -6,7 +6,7 @@ import Header from '../components/Header';
 import { useTheme } from '../context/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 const SupportScreen = () => {
   const { colors } = useTheme();
@@ -20,7 +20,7 @@ const SupportScreen = () => {
           onPress={() => navigation.goBack()} 
           style={styles.backButton}
         >
-          <Ionicons name="arrow-back" size={24} color="white" />
+          <Icon name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
         <Header
           tagline="Support The Vent"

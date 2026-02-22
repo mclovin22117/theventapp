@@ -2,7 +2,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Platform, Image, TouchableOpacity } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 import AppLogo from '../assets/ventlogo.png';
 
@@ -45,7 +45,7 @@ const Header = ({
           style={styles.menuButton}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons name="menu" size={24} color={currentHeaderTextColor} />
+          <Icon name="menu" size={24} color={currentHeaderTextColor} />
         </TouchableOpacity>
       )}
     </View>

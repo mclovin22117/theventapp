@@ -4,9 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet, Platform, Alert } from 'react-native';
 import { NavigationContainer, CommonActions } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Updates from 'expo-updates'; // NEW: Import Expo Updates
 import ViewUserProfile from './screens/ViewUserProfile';
 
 import HomeScreen from './screens/HomeScreen';
@@ -93,39 +92,7 @@ function AppContent() {
 
   const [showSplash, setShowSplash] = useState(true);
 
-  // NEW: Function to check for and apply updates
-  async function checkForUpdates() {
-    try {
-      const update = await Updates.checkForUpdateAsync();
-      if (update.isAvailable) {
-        Alert.alert(
-          'Update Available',
-          'A new version of the app is available. Restart to update?',
-          [
-            {
-              text: 'Later',
-              style: 'cancel',
-            },
-            {
-              text: 'Update',
-              onPress: async () => {
-                await Updates.fetchUpdateAsync();
-                await Updates.reloadAsync();
-              },
-            },
-          ]
-        );
-      }
-    } catch (e) {
-      // You can handle this error, e.g., by logging it
-      console.log('Error fetching updates', e);
-    }
-  }
-
   useEffect(() => {
-    // Check for updates as soon as the app loads
-    checkForUpdates();
-
     const timer = setTimeout(() => {
       setShowSplash(false);
     }, 2000);

@@ -14,7 +14,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from 'react-native-vector-icons/Ionicons';
 import ThoughtInput from '../components/ThoughtInput';
 import Header from '../components/Header';
 import { supabase } from '../supabaseConfig';
@@ -111,7 +111,7 @@ const PostScreen = ({ navigation }) => {
             style={styles.backButton}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Ionicons name="arrow-back" size={24} color="white" />
+            <Icon name="arrow-back" size={24} color="white" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Share what's on your mind</Text>
           <View style={{ width: 40 }} />

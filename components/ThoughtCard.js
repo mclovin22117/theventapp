@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { doc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 
@@ -48,11 +48,11 @@ const ThoughtCard = ({ thought, onPress }) => {
       <Text style={styles.thoughtText} numberOfLines={Platform.OS === 'web' ? 3 : 0} ellipsizeMode="tail">{thought.text}</Text>
       <View style={styles.footer}>
         <TouchableOpacity style={styles.commentButton} onPress={handleCardPress}>
-          <Ionicons name="chatbubble-outline" size={18} color="#757575" />
+          <Icon name="chatbubble-outline" size={18} color="#757575" />
           <Text style={styles.commentCount}>{thought.commentsCount || 0}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.likeButton} onPress={handleLike} disabled={liked}>
-          <Ionicons name={liked ? "heart" : "heart-outline"} size={18} color={liked ? "#e91e63" : "#757575"} />
+          <Icon name={liked ? "heart" : "heart-outline"} size={18} color={liked ? "#e91e63" : "#757575"} />
           <Text style={[styles.likeCount, liked && styles.likedText]}>{likesCount}</Text>
         </TouchableOpacity>
       </View>

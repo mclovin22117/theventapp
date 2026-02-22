@@ -16,7 +16,7 @@ import { supabase } from '../supabaseConfig';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 const UserPostsScreen = () => {
   const [posts, setPosts] = useState([]);
@@ -289,7 +289,7 @@ const UserPostsScreen = () => {
           </View>
         </TouchableOpacity>
         <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeletePost(item.id)}>
-          <Ionicons name="trash-outline" size={24} color="#dc3545" />
+          <Icon name="trash-outline" size={24} color="#dc3545" />
         </TouchableOpacity>
       </View>
     );
@@ -311,7 +311,7 @@ const UserPostsScreen = () => {
           onPress={() => navigation.goBack()} 
           style={styles.backButton}
         >
-          <Ionicons name="arrow-back" size={24} color="white" />
+          <Icon name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
         <Header
           tagline="Your Posts"

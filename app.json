@@ -1,38 +1,4 @@
 {
-  "expo": {
-    "name": "thevent",
-    "slug": "thevent",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/logoorange.png",
-    "userInterfaceStyle": "dark",
-    "newArchEnabled": true,
-    "scheme": "thevent",
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.bawayaga.thevent"
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/logoorange.png",
-        "backgroundColor": "#ffffff"
-      },
-      "package": "com.bawayaga.thevent",
-      "edgeToEdgeEnabled": true
-    },
-    "web": {
-      "favicon": "./assets/ventlogo.png"
-    },
-    "splash": {
-      "image": "./assets/ventlogo.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
-    "extra": {
-      "eas": {
-        "projectId": "60ebc278-cb73-4b21-9a01-23ae89ea58e1"
-      }
-    },
-    "owner": "bawayaga"
-  }
+  "name": "thevent",
+  "displayName": "thevent"
 }

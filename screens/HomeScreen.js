@@ -23,7 +23,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import { categories } from '../utils/helpers';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const isWeb = Platform.OS === 'web';
@@ -187,14 +187,14 @@ const PostItem = memo(({
 						style={styles.actionItem}
 						onPress={onPress}
 					>
-						<Ionicons name="chatbubble-outline" size={20} color={colors.placeholder} />
+						<Icon name="chatbubble-outline" size={20} color={colors.placeholder} />
 						<Text style={[styles.actionCount, { color: colors.placeholder }]}>{replyCount}</Text>
 					</TouchableOpacity>
 					<TouchableOpacity 
 						style={styles.actionItem}
 						onPress={() => onLikeToggle(item.id, item.userId, hasLiked)}
 					>
-						<Ionicons name={hasLiked ? "heart" : "heart-outline"} size={20} color={hasLiked ? "#e91e63" : colors.placeholder} />
+						<Icon name={hasLiked ? "heart" : "heart-outline"} size={20} color={hasLiked ? "#e91e63" : colors.placeholder} />
 						<Text style={[styles.actionCount, { color: hasLiked ? "#e91e63" : colors.placeholder }]}>{likeCount}</Text>
 					</TouchableOpacity>
 				</View>
@@ -514,7 +514,7 @@ const HomeScreen = () => {
 				{/* Search bar */}
 				<View style={[styles.searchBarContainer, { backgroundColor: colors.background }]}>
 					<View style={[styles.searchInputWrapper, { backgroundColor: colors.card, borderColor: colors.border }]}>
-						<Ionicons name="search" size={20} color={colors.placeholder} />
+						<Icon name="search" size={20} color={colors.placeholder} />
 						<TextInput
 							style={[styles.searchInputField, { color: colors.text }]}
 							placeholder="Search posts..."
@@ -533,7 +533,7 @@ const HomeScreen = () => {
 						onPress={() => setShowCategoryModal(true)}
 					>
 						<Text style={[styles.filterChipText, { color: colors.text }]}>{selectedCategory}</Text>
-						<Ionicons name="chevron-down" size={16} color={colors.text} />
+						<Icon name="chevron-down" size={16} color={colors.text} />
 					</TouchableOpacity>
 				</View>
 
@@ -590,7 +590,7 @@ const HomeScreen = () => {
 											{item}
 										</Text>
 										{selectedCategory === item && (
-											<Ionicons name="checkmark" size={24} color={colors.primary} />
+											<Icon name="checkmark" size={24} color={colors.primary} />
 										)}
 									</TouchableOpacity>
 								)}
@@ -642,7 +642,7 @@ const HomeScreen = () => {
 					onPress={() => navigation.navigate('Post')}
 					activeOpacity={0.8}
 				>
-					<Ionicons name="leaf" size={28} color="#fff" />
+					<Icon name="leaf" size={28} color="#fff" />
 				</TouchableOpacity>
 			</View>
 		</SafeAreaView>

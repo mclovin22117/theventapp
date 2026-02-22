@@ -21,7 +21,7 @@ import { supabase } from '../supabaseConfig';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { categories } from '../utils/helpers';
 
 // Recursive Reply Item Component
@@ -389,7 +389,7 @@ const PostDetailsScreen = () => {
           onPress={() => navigation.goBack()}
           style={[styles.backButtonHeader, { top: (insets.top || 12) + 6 }]}
         >
-            <Ionicons name="arrow-back" size={24} color="white" />
+            <Icon name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
       </View>
 
@@ -535,7 +535,7 @@ const PostDetailsScreen = () => {
               />
               {parentReply && (
                 <TouchableOpacity onPress={() => setParentReply(null)} style={styles.cancelReplyButton}>
-                  <Ionicons name="close-circle" size={24} color={colors.text} />
+                  <Icon name="close-circle" size={24} color={colors.text} />
                 </TouchableOpacity>
               )}
               <TouchableOpacity
@@ -587,7 +587,7 @@ const PostDetailsScreen = () => {
                     {item}
                   </Text>
                   {selectedCategory === item && (
-                    <Ionicons name="checkmark" size={24} color={colors.primary} />
+                    <Icon name="checkmark" size={24} color={colors.primary} />
                   )}
                 </TouchableOpacity>
               )}

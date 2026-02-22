@@ -15,7 +15,7 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../supabaseConfig';
 import Header from '../components/Header';
 import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 const NotificationScreen = () => {
   const [notifications, setNotifications] = useState([]);
@@ -141,7 +141,7 @@ const NotificationScreen = () => {
           onPress={() => navigation.goBack()} 
           style={styles.backButton}
         >
-          <Ionicons name="arrow-back" size={24} color="white" />
+          <Icon name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
         <Header
           tagline="Your Notifications"

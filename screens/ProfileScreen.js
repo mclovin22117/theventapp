@@ -7,9 +7,9 @@ import { useTheme } from '../context/ThemeContext';
 import Header from '../components/Header';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../supabaseConfig';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as ImagePicker from 'expo-image-picker';
+import { launchImageLibrary } from 'react-native-image-picker';
 import { uploadProfilePicture } from '../utils/imageUpload';
 
 export default function ProfileScreen() {
@@ -135,24 +135,15 @@ export default function ProfileScreen() {
       return;
     }
     try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permission.granted) {
-        Alert.alert('Permission required', 'Permission to access photos is required.');
-        return;
-      }
-
-      const mediaTypes =
-        (ImagePicker.MediaType && ImagePicker.MediaType.Images) ||
-        (ImagePicker.MediaTypeOptions && ImagePicker.MediaTypeOptions.Images);
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes,
-        allowsEditing: true,
-        aspect: [1, 1],
+      const result = await launchImageLibrary({
+        mediaType: 'photo',
+        maxWidth: 1024,
+        maxHeight: 1024,
         quality: 0.7,
+        includeBase64: false,
       });
 
-      if (result.canceled || !result.assets || !result.assets.length) {
+      if (result.didCancel || !result.assets || !result.assets.length) {
         return;
       }
 
@@ -237,7 +228,7 @@ export default function ProfileScreen() {
           style={[styles.myPostsButton, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={pickAndUpload}
         >
-          <Ionicons name="camera" size={20} color={colors.text} />
+          <Icon name="camera" size={20} color={colors.text} />
           <Text style={[styles.myPostsButtonText, { color: colors.text }]}>Upload / Change Profile Picture</Text>
         </TouchableOpacity>
 
@@ -247,7 +238,7 @@ export default function ProfileScreen() {
           style={[styles.notificationsButton, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={() => navigation.navigate('Notifications')}
         >
-          <Ionicons name="notifications" size={24} color={colors.text} />
+          <Icon name="notifications" size={24} color={colors.text} />
           <Text style={[styles.notificationsButtonText, { color: colors.text }]}>
             Notifications
           </Text>
@@ -262,7 +253,7 @@ export default function ProfileScreen() {
           style={[styles.myPostsButton, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={() => navigation.navigate('UserPosts')}
         >
-          <Ionicons name="document-text" size={24} color={colors.text} />
+          <Icon name="document-text" size={24} color={colors.text} />
           <Text style={[styles.myPostsButtonText, { color: colors.text }]}>
             My Posts
           </Text>
@@ -283,7 +274,7 @@ export default function ProfileScreen() {
           style={[styles.updateAppButton, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={handleUpdateApp}
         >
-          <Ionicons name="cloud-download" size={24} color={colors.text} />
+          <Icon name="cloud-download" size={24} color={colors.text} />
           <Text style={[styles.updateAppButtonText, { color: colors.text }]}>Update App</Text>
         </TouchableOpacity>
         <Text style={[styles.updateAppInstruction, { color: colors.placeholder }]}>To update, tap the button above, then scroll down and click the .apk file under "Assets" to download and install the latest version.</Text>

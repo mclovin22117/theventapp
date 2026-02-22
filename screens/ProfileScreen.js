@@ -35,6 +35,8 @@ export default function ProfileScreen() {
     fetchNotifications();
 
     // Subscribe to real-time notification updates
+  useEffect(() => {
+  if (!appUser) return; 
     const channel = supabase
       .channel('profile_notifications')
       .on(
@@ -73,32 +75,31 @@ export default function ProfileScreen() {
 
   // Fetch publicProfile and profilePic settings on mount
   useEffect(() => {
-    const fetchUserData = async () => {
-      if (!appUser) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from('users')
-          .select('public_profile, profile_pic')
-          .eq('id', appUser.id)
-          .single();
+  if (!appUser) return;
 
-        if (error) throw error;
+  fetchNotifications();
 
-        if (data) {
-          if (data.public_profile !== undefined) {
-            setPublicProfile(data.public_profile);
-          }
-          if (data.profile_pic) {
-            setProfilePic(data.profile_pic);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching user data:', error);
+  // Subscribe to real-time notification updates
+  const channel = supabase
+    .channel('profile_notifications')
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'notifications',
+        filter: `recipient_id=eq.${appUser.id}`,
+      },
+      () => {
+        fetchNotifications();
       }
-    };
-    fetchUserData();
-  }, [appUser]);
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}, [appUser]);
 
   // Update publicProfile in Supabase
   const handleTogglePublicProfile = async () => {
@@ -283,7 +284,7 @@ export default function ProfileScreen() {
       </ScrollView>
     </SafeAreaView>
   );
-}
+
 
 const styles = StyleSheet.create({
   loadingContainer: {
@@ -409,4 +410,4 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
   },
-});
+})}

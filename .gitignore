@@ -37,3 +37,6 @@ build/
 # OS
 .DS_Store
 Thumbs.db
+
+# Flutter metadata - auto generated
+.metadata

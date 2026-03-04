@@ -8,8 +8,8 @@ import 'screens/home_screen.dart';
 import 'screens/post_screen.dart';
 import 'screens/post_details_screen.dart';
 import 'screens/profile_screen.dart';
-import 'models/post_model.dart';
 import 'screens/about_screen.dart';
+import 'models/post_model.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,7 +40,6 @@ class MyApp extends StatelessWidget {
         '/register': (context) => const RegisterScreen(),
         '/home': (context) => const MainScreen(),
         '/post': (context) => const PostScreen(),
-        '/profile': (context) => const ProfileScreen(),
         '/about': (context) => const AboutScreen(),
       },
       onGenerateRoute: (settings) {
@@ -56,7 +55,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// Main Screen with Bottom Navigation
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -67,6 +65,7 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
+  // IndexedStack keeps screens alive — prevents blank screen on navigate back
   final List<Widget> _screens = [
     const HomeScreen(),
     const ProfileScreen(),
@@ -75,7 +74,10 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_currentIndex],
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _screens,
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),

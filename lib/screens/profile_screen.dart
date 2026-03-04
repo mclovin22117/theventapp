@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import '../services/profile_service.dart';
-import '../screens/about_screen.dart';
+import 'about_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -31,7 +30,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
-  // Show image options bottom sheet
   void _showImageOptions() {
     showModalBottomSheet(
       context: context,
@@ -46,7 +44,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Handle bar
                 Container(
                   width: 40,
                   height: 4,
@@ -56,8 +53,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-
-                // Title
                 const Text(
                   'Profile Picture',
                   style: TextStyle(
@@ -67,8 +62,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-
-                // Upload / Replace option
                 ListTile(
                   leading: const CircleAvatar(
                     backgroundColor: Color(0xFF7C4DFF),
@@ -89,8 +82,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _uploadImage();
                   },
                 ),
-
-                // Remove option (only if picture exists)
                 if (_profile?['profile_picture_url'] != null)
                   ListTile(
                     leading: const CircleAvatar(
@@ -110,8 +101,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       _removeImage();
                     },
                   ),
-
-                // Cancel
                 ListTile(
                   leading: const CircleAvatar(
                     backgroundColor: Color(0xFF2C2C2C),
@@ -168,7 +157,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // Logout confirmation dialog
   void _showLogoutDialog() {
     showDialog(
       context: context,
@@ -238,13 +226,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D0D0D),
         elevation: 0,
-        leading: IconButton(
-          onPressed: () => Navigator.pop(context),
-          icon: const Icon(
-            Icons.arrow_back_ios,
-            color: Colors.white,
-          ),
-        ),
+        automaticallyImplyLeading: false,
         title: const Text(
           'Profile',
           style: TextStyle(
@@ -263,6 +245,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           : SingleChildScrollView(
               padding: const EdgeInsets.all(24),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   const SizedBox(height: 20),
 
@@ -270,7 +253,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Stack(
                     alignment: Alignment.bottomRight,
                     children: [
-                      // Avatar
                       GestureDetector(
                         onTap: _showImageOptions,
                         child: Container(
@@ -312,8 +294,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ),
                       ),
-
-                      // Edit Icon Badge
                       GestureDetector(
                         onTap: _showImageOptions,
                         child: Container(
@@ -363,35 +343,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         color: const Color(0xFF2C2C2C),
                       ),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    child: Column(
                       children: [
-                        // Total Posts
-                        Column(
-                          children: [
-                            Text(
-                              '${_profile?['posts'] != null ? (_profile!['posts'] as List).length : 0}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 26,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            const Text(
-                              'Vents',
-                              style: TextStyle(
-                                color: Color(0xFF9E9E9E),
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
+                        Text(
+                          '${_profile?['posts'] != null ? (_profile!['posts'] as List).length : 0}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Vents',
+                          style: TextStyle(
+                            color: Color(0xFF9E9E9E),
+                            fontSize: 13,
+                          ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 40),
-
                   const SizedBox(height: 16),
 
                   // About Button
@@ -457,6 +429,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 30),
                 ],
               ),
             ),

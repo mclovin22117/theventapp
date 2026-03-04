@@ -15,6 +15,7 @@ class PostDetailsScreen extends StatefulWidget {
 class _PostDetailsScreenState extends State<PostDetailsScreen> {
   final PostService _postService = PostService();
   final _replyController = TextEditingController();
+  final _scrollController = ScrollController();
   List<ReplyModel> _replies = [];
   bool _isLoadingReplies = true;
   bool _isSubmittingReply = false;
@@ -27,6 +28,13 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
     _loadReplies();
   }
 
+  @override
+  void dispose() {
+    _replyController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadReplies() async {
     setState(() => _isLoadingReplies = true);
     final replies = await _postService.getReplies(widget.post.id);
@@ -37,7 +45,6 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
   }
 
   Future<void> _likePost() async {
-    // Save old state in case we need to revert
     final previousIsLiked = widget.post.isLiked;
     final previousLikesCount = _likesCount;
 
@@ -48,7 +55,7 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
       widget.post.likesCount = _likesCount;
     });
 
-    // Sync with database and get real result
+    // Sync with database
     final isNowLiked = await _postService.toggleLike(widget.post);
 
     // Update with real DB result
@@ -63,7 +70,6 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
 
   Future<void> _submitReply() async {
     final content = _replyController.text.trim();
-
     if (content.isEmpty) return;
 
     setState(() => _isSubmittingReply = true);
@@ -77,7 +83,17 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
 
     if (result['success']) {
       _replyController.clear();
+      FocusScope.of(context).unfocus();
       await _loadReplies();
+      // Scroll to bottom to see new reply
+      await Future.delayed(const Duration(milliseconds: 300));
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
     } else {
       _showMessage(result['message']);
     }
@@ -106,15 +122,9 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
   }
 
   @override
-  void dispose() {
-    _replyController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: true, // ← Add this
+      resizeToAvoidBottomInset: true,
       backgroundColor: const Color(0xFF0D0D0D),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D0D0D),
@@ -137,274 +147,257 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
       ),
       body: Column(
         children: [
-          // Scrollable Content
+          // Scrollable content
           Expanded(
-            child: SingleChildScrollView(
+            child: ListView(
+              controller: _scrollController,
               padding: const EdgeInsets.all(16),
-              child: Column(
-        children: [
-          // Scrollable Content
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Post Card
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1A1A1A),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: const Color(0xFF2C2C2C),
-                      ),
+              children: [
+                // Post Card
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1A1A1A),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: const Color(0xFF2C2C2C),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // User Info
-                        Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 22,
-                              backgroundColor: const Color(0xFF2C2C2C),
-                              backgroundImage: widget.post.profilePictureUrl !=
-                                          null &&
-                                      widget.post.profilePictureUrl!.isNotEmpty
-                                  ? NetworkImage(widget.post.profilePictureUrl!)
-                                  : null,
-                              child: widget.post.profilePictureUrl == null ||
-                                      widget.post.profilePictureUrl!.isEmpty
-                                  ? const Icon(
-                                      Icons.person_outline,
-                                      color: Color(0xFF9E9E9E),
-                                      size: 22,
-                                    )
-                                  : null,
-                            ),
-                            const SizedBox(width: 10),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  widget.post.username,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 15,
-                                  ),
-                                ),
-                                Text(
-                                  _timeAgo(widget.post.createdAt),
-                                  style: const TextStyle(
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // User Info Row
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 22,
+                            backgroundColor: const Color(0xFF2C2C2C),
+                            backgroundImage:
+                                widget.post.profilePictureUrl != null &&
+                                        widget.post.profilePictureUrl!.isNotEmpty
+                                    ? NetworkImage(widget.post.profilePictureUrl!)
+                                    : null,
+                            child: widget.post.profilePictureUrl == null ||
+                                    widget.post.profilePictureUrl!.isEmpty
+                                ? const Icon(
+                                    Icons.person_outline,
                                     color: Color(0xFF9E9E9E),
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 14),
-
-                        // Full Post Content
-                        Text(
-                          widget.post.content,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
-                            height: 1.6,
+                                    size: 22,
+                                  )
+                                : null,
                           ),
-                        ),
-                        const SizedBox(height: 14),
-
-                        // Like Button
-                        GestureDetector(
-                          onTap: _likePost,
-                          child: Row(
+                          const SizedBox(width: 10),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(
-                                widget.post.isLiked
-                                    ? Icons.favorite
-                                    : Icons.favorite_border,
-                                color: widget.post.isLiked
-                                    ? const Color(0xFFFF4D6D)
-                                    : const Color(0xFF9E9E9E),
-                                size: 22,
-                              ),
-                              const SizedBox(width: 6),
                               Text(
-                                '$_likesCount',
-                                style: TextStyle(
-                                  color: widget.post.isLiked
-                                      ? const Color(0xFFFF4D6D)
-                                      : const Color(0xFF9E9E9E),
-                                  fontSize: 14,
+                                widget.post.username,
+                                style: const TextStyle(
+                                  color: Colors.white,
                                   fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              Text(
+                                _timeAgo(widget.post.createdAt),
+                                style: const TextStyle(
+                                  color: Color(0xFF9E9E9E),
+                                  fontSize: 12,
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
 
-                  // Replies Section Header
-                  Row(
-                    children: [
-                      const Text(
-                        'Replies',
-                        style: TextStyle(
+                      // Full Post Content
+                      Text(
+                        widget.post.content,
+                        style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          height: 1.6,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF7C4DFF).withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          '${_replies.length}',
-                          style: const TextStyle(
-                            color: Color(0xFF7C4DFF),
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      const SizedBox(height: 14),
+
+                      // Like Button
+                      GestureDetector(
+                        onTap: _likePost,
+                        child: Row(
+                          children: [
+                            Icon(
+                              widget.post.isLiked
+                                  ? Icons.favorite
+                                  : Icons.favorite_border,
+                              color: widget.post.isLiked
+                                  ? const Color(0xFFFF4D6D)
+                                  : const Color(0xFF9E9E9E),
+                              size: 22,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '$_likesCount',
+                              style: TextStyle(
+                                color: widget.post.isLiked
+                                    ? const Color(0xFFFF4D6D)
+                                    : const Color(0xFF9E9E9E),
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                ),
+                const SizedBox(height: 20),
 
-                  // Replies List
-                  _isLoadingReplies
-                      ? const Center(
-                          child: CircularProgressIndicator(
-                            color: Color(0xFF7C4DFF),
-                          ),
-                        )
-                      : _replies.isEmpty
-                          ? const Center(
-                              child: Padding(
-                                padding: EdgeInsets.symmetric(vertical: 24),
-                                child: Text(
-                                  'No replies yet. Be the first to reply!',
-                                  style: TextStyle(
-                                    color: Color(0xFF9E9E9E),
-                                    fontSize: 13,
-                                  ),
-                                ),
+                // Replies Header
+                Row(
+                  children: [
+                    const Text(
+                      'Replies',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF7C4DFF).withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '${_replies.length}',
+                        style: const TextStyle(
+                          color: Color(0xFF7C4DFF),
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Replies List
+                if (_isLoadingReplies)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 24),
+                      child: CircularProgressIndicator(
+                        color: Color(0xFF7C4DFF),
+                      ),
+                    ),
+                  )
+                else if (_replies.isEmpty)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 24),
+                      child: Text(
+                        'No replies yet. Be the first to reply!',
+                        style: TextStyle(
+                          color: Color(0xFF9E9E9E),
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  ...List.generate(_replies.length, (index) {
+                    final reply = _replies[index];
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1A1A1A),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: const Color(0xFF2C2C2C),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Reply User Info
+                          Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 16,
+                                backgroundColor: const Color(0xFF2C2C2C),
+                                backgroundImage:
+                                    reply.profilePictureUrl != null &&
+                                            reply.profilePictureUrl!.isNotEmpty
+                                        ? NetworkImage(reply.profilePictureUrl!)
+                                        : null,
+                                child: reply.profilePictureUrl == null ||
+                                        reply.profilePictureUrl!.isEmpty
+                                    ? const Icon(
+                                        Icons.person_outline,
+                                        color: Color(0xFF9E9E9E),
+                                        size: 16,
+                                      )
+                                    : null,
                               ),
-                            )
-                          : ListView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: _replies.length,
-                              itemBuilder: (context, index) {
-                                final reply = _replies[index];
-                                return Container(
-                                  margin: const EdgeInsets.only(bottom: 10),
-                                  padding: const EdgeInsets.all(14),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF1A1A1A),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: const Color(0xFF2C2C2C),
+                              const SizedBox(width: 8),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    reply.username,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
                                     ),
                                   ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      // Reply User Info
-                                      Row(
-                                        children: [
-                                          CircleAvatar(
-                                            radius: 16,
-                                            backgroundColor:
-                                                const Color(0xFF2C2C2C),
-                                            backgroundImage: reply
-                                                            .profilePictureUrl !=
-                                                        null &&
-                                                    reply.profilePictureUrl!
-                                                        .isNotEmpty
-                                                ? NetworkImage(
-                                                    reply.profilePictureUrl!)
-                                                : null,
-                                            child: reply.profilePictureUrl ==
-                                                        null ||
-                                                    reply.profilePictureUrl!
-                                                        .isEmpty
-                                                ? const Icon(
-                                                    Icons.person_outline,
-                                                    color: Color(0xFF9E9E9E),
-                                                    size: 16,
-                                                  )
-                                                : null,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                reply.username,
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 13,
-                                                ),
-                                              ),
-                                              Text(
-                                                _timeAgo(reply.createdAt),
-                                                style: const TextStyle(
-                                                  color: Color(0xFF9E9E9E),
-                                                  fontSize: 11,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 8),
-
-                                      // Reply Content
-                                      Text(
-                                        reply.content,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 14,
-                                          height: 1.5,
-                                        ),
-                                      ),
-                                    ],
+                                  Text(
+                                    _timeAgo(reply.createdAt),
+                                    style: const TextStyle(
+                                      color: Color(0xFF9E9E9E),
+                                      fontSize: 11,
+                                    ),
                                   ),
-                                );
-                              },
+                                ],
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+
+                          // Reply Content
+                          Text(
+                            reply.content,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              height: 1.5,
                             ),
-                ],
-              ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+              ],
             ),
           ),
 
           // Reply Input Box at Bottom
           Container(
-            padding: EdgeInsets.only(
+            padding: const EdgeInsets.only(
               left: 16,
               right: 16,
               top: 12,
-              bottom: MediaQuery.of(context).viewInsets.bottom + 12,
+              bottom: 12,
             ),
             decoration: const BoxDecoration(
               color: Color(0xFF1A1A1A),

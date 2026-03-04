@@ -69,7 +69,7 @@ class AboutScreen extends StatelessWidget {
             ),
             const SizedBox(height: 6),
 
-            // Version
+            // Version Badge
             Container(
               padding: const EdgeInsets.symmetric(
                 horizontal: 12,
@@ -94,36 +94,13 @@ class AboutScreen extends StatelessWidget {
             const SizedBox(height: 30),
 
             // Description Card
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1A1A1A),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: const Color(0xFF2C2C2C),
-                ),
-              ),
+            _buildCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        color: Color(0xFF7C4DFF),
-                        size: 20,
-                      ),
-                      SizedBox(width: 8),
-                      Text(
-                        'About TheVent',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
+                  _buildCardTitle(
+                    icon: Icons.info_outline,
+                    title: 'About TheVent',
                   ),
                   const SizedBox(height: 12),
                   const Text(
@@ -139,43 +116,117 @@ class AboutScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // Developer Card
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1A1A1A),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: const Color(0xFF2C2C2C),
-                ),
-              ),
+            // Features Card
+            _buildCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  _buildCardTitle(
+                    icon: Icons.star_outline,
+                    title: 'Features',
+                  ),
+                  const SizedBox(height: 12),
+                  _buildFeatureTile(
+                    icon: Icons.lock_outline,
+                    label: 'Anonymous Venting',
+                    description: 'Express freely without judgment',
+                  ),
+                  _buildFeatureTile(
+                    icon: Icons.favorite_outline,
+                    label: 'Likes',
+                    description: 'One like per user per vent',
+                  ),
+                  _buildFeatureTile(
+                    icon: Icons.chat_bubble_outline,
+                    label: 'Replies',
+                    description: 'Reply and connect with others',
+                  ),
+                  _buildFeatureTile(
+                    icon: Icons.person_outline,
+                    label: 'Profile',
+                    description: 'Customize your profile picture',
+                    isLast: true,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Developer Card
+            _buildCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildCardTitle(
+                    icon: Icons.code,
+                    title: 'Developer',
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
                     children: [
-                      Icon(
-                        Icons.code,
-                        color: Color(0xFF7C4DFF),
-                        size: 20,
-                      ),
-                      SizedBox(width: 8),
-                      Text(
-                        'Developer',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF7C4DFF).withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: const Color(0xFF7C4DFF).withOpacity(0.3),
+                          ),
                         ),
+                        child: const Icon(
+                          Icons.groups_outlined,
+                          color: Color(0xFF7C4DFF),
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'TheVent Team',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'Design & Development',
+                            style: TextStyle(
+                              color: Color(0xFF9E9E9E),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Tech Stack Card
+            _buildCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildCardTitle(
+                    icon: Icons.layers_outlined,
+                    title: 'Built With',
+                  ),
                   const SizedBox(height: 12),
-                  _buildDeveloperTile(
-                    name: 'TheVent Team',
-                    role: 'Design & Development',
-                    icon: Icons.groups_outlined,
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _buildTechBadge('Flutter'),
+                      _buildTechBadge('Dart'),
+                      _buildTechBadge('Supabase'),
+                      _buildTechBadge('PostgreSQL'),
+                    ],
                   ),
                 ],
               ),
@@ -195,25 +246,22 @@ class AboutScreen extends StatelessWidget {
               child: Column(
                 children: [
                   _buildLinkTile(
+                    context: context,
                     icon: Icons.privacy_tip_outlined,
                     title: 'Privacy Policy',
                     onTap: () => _showComingSoon(context, 'Privacy Policy'),
                     isFirst: true,
                   ),
-                  const Divider(
-                    color: Color(0xFF2C2C2C),
-                    height: 1,
-                  ),
+                  const Divider(color: Color(0xFF2C2C2C), height: 1),
                   _buildLinkTile(
+                    context: context,
                     icon: Icons.description_outlined,
                     title: 'Terms of Service',
                     onTap: () => _showComingSoon(context, 'Terms of Service'),
                   ),
-                  const Divider(
-                    color: Color(0xFF2C2C2C),
-                    height: 1,
-                  ),
+                  const Divider(color: Color(0xFF2C2C2C), height: 1),
                   _buildLinkTile(
+                    context: context,
                     icon: Icons.bug_report_outlined,
                     title: 'Report a Bug',
                     onTap: () => _showComingSoon(context, 'Bug Report'),
@@ -226,13 +274,13 @@ class AboutScreen extends StatelessWidget {
 
             // Footer
             const Text(
-              'Made with ❤️ by TheVent Team',
+              'Made with ❤️ by mclovin',
               style: TextStyle(
                 color: Color(0xFF9E9E9E),
                 fontSize: 13,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             const Text(
               '© 2026 TheVent. All rights reserved.',
               style: TextStyle(
@@ -247,48 +295,137 @@ class AboutScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDeveloperTile({
-    required String name,
-    required String role,
+  // Reusable Card Container
+  Widget _buildCard({required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFF2C2C2C),
+        ),
+      ),
+      child: child,
+    );
+  }
+
+  // Reusable Card Title
+  Widget _buildCardTitle({
     required IconData icon,
+    required String title,
   }) {
     return Row(
       children: [
-        CircleAvatar(
-          radius: 22,
-          backgroundColor: const Color(0xFF2C2C2C),
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: const Color(0xFF7C4DFF).withOpacity(0.15),
+            borderRadius: BorderRadius.circular(8),
+          ),
           child: Icon(
             icon,
             color: const Color(0xFF7C4DFF),
-            size: 22,
+            size: 18,
           ),
         ),
-        const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              name,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
-            ),
-            Text(
-              role,
-              style: const TextStyle(
-                color: Color(0xFF9E9E9E),
-                fontSize: 12,
-              ),
-            ),
-          ],
+        const SizedBox(width: 10),
+        Text(
+          title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ],
     );
   }
 
+  // Reusable Feature Tile
+  Widget _buildFeatureTile({
+    required IconData icon,
+    required String label,
+    required String description,
+    bool isLast = false,
+  }) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2C2C2C),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                icon,
+                color: const Color(0xFF7C4DFF),
+                size: 16,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  description,
+                  style: const TextStyle(
+                    color: Color(0xFF9E9E9E),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        if (!isLast)
+          const Divider(
+            color: Color(0xFF2C2C2C),
+            height: 20,
+          ),
+      ],
+    );
+  }
+
+  // Reusable Tech Badge
+  Widget _buildTechBadge(String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: 6,
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2C2C2C),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFF7C4DFF).withOpacity(0.3),
+        ),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Color(0xFF7C4DFF),
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  // Reusable Link Tile
   Widget _buildLinkTile({
+    required BuildContext context,
     required IconData icon,
     required String title,
     required VoidCallback onTap,
@@ -303,10 +440,17 @@ class AboutScreen extends StatelessWidget {
           bottom: isLast ? const Radius.circular(16) : Radius.zero,
         ),
       ),
-      leading: Icon(
-        icon,
-        color: const Color(0xFF7C4DFF),
-        size: 22,
+      leading: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: const Color(0xFF7C4DFF).withOpacity(0.15),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(
+          icon,
+          color: const Color(0xFF7C4DFF),
+          size: 18,
+        ),
       ),
       title: Text(
         title,
@@ -323,6 +467,7 @@ class AboutScreen extends StatelessWidget {
     );
   }
 
+  // Coming Soon Dialog
   void _showComingSoon(BuildContext context, String title) {
     showDialog(
       context: context,

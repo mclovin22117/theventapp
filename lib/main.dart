@@ -4,6 +4,10 @@ import 'supabase_config.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
+import 'screens/home_screen.dart';
+import 'screens/post_screen.dart';
+import 'screens/post_details_screen.dart';
+import 'models/post_model.dart'; // ← This was missing!
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,11 +36,17 @@ class MyApp extends StatelessWidget {
       routes: {
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
-        '/home': (context) => const Scaffold(
-              body: Center(
-                child: Text('Home Screen - Coming Soon'),
-              ),
-            ),
+        '/home': (context) => const HomeScreen(),
+        '/post': (context) => const PostScreen(),
+      },
+      onGenerateRoute: (settings) {
+        if (settings.name == '/post-details') {
+          final post = settings.arguments as PostModel;
+          return MaterialPageRoute(
+            builder: (context) => PostDetailsScreen(post: post),
+          );
+        }
+        return null;
       },
     );
   }

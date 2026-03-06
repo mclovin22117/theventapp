@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'report_bug_screen.dart';
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
@@ -83,7 +84,7 @@ class AboutScreen extends StatelessWidget {
                 ),
               ),
               child: const Text(
-                'Version 1.0.0',
+                'Version 1.2.0',
                 style: TextStyle(
                   color: Color(0xFF7C4DFF),
                   fontSize: 12,
@@ -184,7 +185,7 @@ class AboutScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'TheVent Team',
+                            'mclovin22117',
                             style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
@@ -247,24 +248,15 @@ class AboutScreen extends StatelessWidget {
                 children: [
                   _buildLinkTile(
                     context: context,
-                    icon: Icons.privacy_tip_outlined,
-                    title: 'Privacy Policy',
-                    onTap: () => _showComingSoon(context, 'Privacy Policy'),
-                    isFirst: true,
-                  ),
-                  const Divider(color: Color(0xFF2C2C2C), height: 1),
-                  _buildLinkTile(
-                    context: context,
-                    icon: Icons.description_outlined,
-                    title: 'Terms of Service',
-                    onTap: () => _showComingSoon(context, 'Terms of Service'),
-                  ),
-                  const Divider(color: Color(0xFF2C2C2C), height: 1),
-                  _buildLinkTile(
-                    context: context,
                     icon: Icons.bug_report_outlined,
                     title: 'Report a Bug',
-                    onTap: () => _showComingSoon(context, 'Bug Report'),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ReportBugScreen(),
+                      ),
+                    ),
+                    isFirst: true,
                     isLast: true,
                   ),
                 ],
@@ -274,7 +266,7 @@ class AboutScreen extends StatelessWidget {
 
             // Footer
             const Text(
-              'Made with ❤️ by mclovin',
+              'Made with ❤️ by mclovin22117',
               style: TextStyle(
                 color: Color(0xFF9E9E9E),
                 fontSize: 13,
@@ -295,7 +287,6 @@ class AboutScreen extends StatelessWidget {
     );
   }
 
-  // Reusable Card Container
   Widget _buildCard({required Widget child}) {
     return Container(
       width: double.infinity,
@@ -311,7 +302,6 @@ class AboutScreen extends StatelessWidget {
     );
   }
 
-  // Reusable Card Title
   Widget _buildCardTitle({
     required IconData icon,
     required String title,
@@ -343,7 +333,6 @@ class AboutScreen extends StatelessWidget {
     );
   }
 
-  // Reusable Feature Tile
   Widget _buildFeatureTile({
     required IconData icon,
     required String label,
@@ -398,7 +387,6 @@ class AboutScreen extends StatelessWidget {
     );
   }
 
-  // Reusable Tech Badge
   Widget _buildTechBadge(String label) {
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -423,7 +411,6 @@ class AboutScreen extends StatelessWidget {
     );
   }
 
-  // Reusable Link Tile
   Widget _buildLinkTile({
     required BuildContext context,
     required IconData icon,
@@ -463,39 +450,6 @@ class AboutScreen extends StatelessWidget {
         Icons.arrow_forward_ios,
         color: Color(0xFF9E9E9E),
         size: 14,
-      ),
-    );
-  }
-
-  // Coming Soon Dialog
-  void _showComingSoon(BuildContext context, String title) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: Text(
-          title,
-          style: const TextStyle(color: Colors.white),
-        ),
-        content: const Text(
-          'This page is coming soon!',
-          style: TextStyle(color: Color(0xFF9E9E9E)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'OK',
-              style: TextStyle(
-                color: Color(0xFF7C4DFF),
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

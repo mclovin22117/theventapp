@@ -12,7 +12,6 @@ class AuthService {
     File? profileImage,
   }) async {
     try {
-      // Step 1: Check if username already exists
       final existingUser = await _supabase
           .from('users')
           .select()
@@ -26,7 +25,6 @@ class AuthService {
         };
       }
 
-      // Step 2: Upload profile picture if provided
       String? profilePictureUrl;
       if (profileImage != null) {
         final fileName =
@@ -45,7 +43,6 @@ class AuthService {
             _supabase.storage.from('profiles').getPublicUrl(fileName);
       }
 
-      // Step 3: Insert user into database
       await _supabase.from('users').insert({
         'username': username,
         'password': password,
@@ -57,9 +54,10 @@ class AuthService {
         'message': 'Account created successfully!',
       };
     } catch (e) {
+      print('REGISTER ERROR: $e'); // ← Add this
       return {
         'success': false,
-        'message': 'Something went wrong. Please try again.',
+        'message': 'Something went wrong. Please try again. Error: $e', // ← Show real error
       };
     }
   }
@@ -70,7 +68,6 @@ class AuthService {
     required String password,
   }) async {
     try {
-      // Find user by username and password
       final user = await _supabase
           .from('users')
           .select()
@@ -85,7 +82,6 @@ class AuthService {
         };
       }
 
-      // Save user session locally
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('user_id', user['id']);
       await prefs.setString('username', user['username']);
@@ -98,9 +94,10 @@ class AuthService {
         'user': user,
       };
     } catch (e) {
+      print('LOGIN ERROR: $e'); // ← Add this
       return {
         'success': false,
-        'message': 'Something went wrong. Please try again.',
+        'message': 'Error: $e', // ← Show real error on screen
       };
     }
   }

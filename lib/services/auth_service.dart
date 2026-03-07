@@ -12,13 +12,11 @@ class AuthService {
     File? profileImage,
   }) async {
     try {
+      // ← Use RPC to check if username exists (avoids direct table read)
       final existingUser = await _supabase
-          .from('users')
-          .select()
-          .eq('username', username)
-          .maybeSingle();
+          .rpc('check_username_exists', params: {'p_username': username});
 
-      if (existingUser != null) {
+      if (existingUser == true) {
         return {
           'success': false,
           'message': 'Username already taken. Try another one.',
@@ -43,10 +41,10 @@ class AuthService {
             _supabase.storage.from('profiles').getPublicUrl(fileName);
       }
 
-      await _supabase.from('users').insert({
-        'username': username,
-        'password': password,
-        'profile_picture_url': profilePictureUrl,
+      await _supabase.rpc('register_user', params: {
+        'p_username': username,
+        'p_password': password,
+        'p_profile_picture_url': profilePictureUrl,
       });
 
       return {
@@ -54,10 +52,10 @@ class AuthService {
         'message': 'Account created successfully!',
       };
     } catch (e) {
-      print('REGISTER ERROR: $e'); // ← Add this
+      print('REGISTER ERROR: $e');
       return {
         'success': false,
-        'message': 'Something went wrong. Please try again. Error: $e', // ← Show real error
+        'message': 'Something went wrong. Please try again later.',
       };
     }
   }
@@ -68,25 +66,27 @@ class AuthService {
     required String password,
   }) async {
     try {
-      final user = await _supabase
-          .from('users')
-          .select()
-          .eq('username', username)
-          .eq('password', password)
-          .maybeSingle();
+      final result = await _supabase.rpc('login_user', params: {
+        'p_username': username,
+        'p_password': password,
+      });
 
-      if (user == null) {
+      print('LOGIN RESULT: $result');
+
+      if (result == null || result.isEmpty) {
         return {
           'success': false,
           'message': 'Invalid username or password.',
         };
       }
 
+      final user = result[0];
+
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('user_id', user['id']);
-      await prefs.setString('username', user['username']);
+      await prefs.setString('user_id', user['id'].toString());
+      await prefs.setString('username', user['username'].toString());
       await prefs.setString(
-          'profile_picture_url', user['profile_picture_url'] ?? '');
+          'profile_picture_url', user['profile_picture_url']?.toString() ?? '');
 
       return {
         'success': true,
@@ -94,10 +94,10 @@ class AuthService {
         'user': user,
       };
     } catch (e) {
-      print('LOGIN ERROR: $e'); // ← Add this
+      print('LOGIN ERROR: $e');
       return {
         'success': false,
-        'message': 'Error: $e', // ← Show real error on screen
+        'message': 'Something went wrong. Please try again later.',
       };
     }
   }

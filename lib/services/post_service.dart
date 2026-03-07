@@ -12,14 +12,20 @@ class PostService {
       final prefs = await SharedPreferences.getInstance();
       final currentUserId = prefs.getString('user_id');
 
+      print('FETCHING POSTS... user_id: $currentUserId'); // ← Add this
+
       final response = await _supabase
           .from('posts')
           .select('*, users(username, profile_picture_url)')
           .order('created_at', ascending: false);
 
+      print('POSTS RESPONSE: $response'); // ← Add this
+
       final posts = (response as List)
           .map((post) => PostModel.fromMap(post))
           .toList();
+
+      print('POSTS COUNT: ${posts.length}'); // ← Add this
 
       // Check which posts current user has liked
       if (currentUserId != null) {
@@ -39,6 +45,7 @@ class PostService {
 
       return posts;
     } catch (e) {
+      print('GET POSTS ERROR: $e'); // ← Add this
       return [];
     }
   }

@@ -21,8 +21,17 @@ class ProfileService {
           .eq('id', userId)
           .single();
 
-      return response;
+      // ← Fix: Extract count correctly from posts array
+      final postCount = (response['posts'] as List).isNotEmpty
+          ? response['posts'][0]['count'] ?? 0
+          : 0;
+
+      return {
+        ...response,
+        'post_count': postCount, // ← Add flat post_count field
+      };
     } catch (e) {
+      print('GET PROFILE ERROR: $e');
       return null;
     }
   }

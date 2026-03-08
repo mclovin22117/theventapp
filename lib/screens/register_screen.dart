@@ -18,6 +18,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscureConfirmPassword = true;
   XFile? _profileImage;
   bool _isLoading = false;
+  String? _errorMessage; // ← Add this
 
   final ImagePicker _picker = ImagePicker();
   final AuthService _authService = AuthService();
@@ -43,26 +44,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     // Validation
     if (username.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
-      _showMessage('Please fill in all fields');
+      setState(() => _errorMessage = 'Please fill in all fields');
       return;
     }
 
     if (username.length < 3) {
-      _showMessage('Username must be at least 3 characters');
+      setState(() => _errorMessage = 'Username must be at least 3 characters');
       return;
     }
 
     if (password.length < 6) {
-      _showMessage('Password must be at least 6 characters');
+      setState(() => _errorMessage = 'Password must be at least 6 characters');
       return;
     }
 
     if (password != confirmPassword) {
-      _showMessage('Passwords do not match');
+      setState(() => _errorMessage = 'Passwords do not match');
       return;
     }
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null; // ← Clear error on new attempt
+    });
 
     final result = await _authService.register(
       username: username,
@@ -74,26 +78,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => _isLoading = false);
 
     if (result['success']) {
-      _showMessage('Account created successfully!');
-      // Wait a moment then go to login
       await Future.delayed(const Duration(seconds: 1));
       if (mounted) Navigator.pushReplacementNamed(context, '/login');
     } else {
-      _showMessage(result['message']);
+      setState(() => _errorMessage = result['message']); // ← Set error
     }
-  }
-
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: const Color(0xFF2C2C2C),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-    );
   }
 
   @override
@@ -236,6 +225,47 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                       ),
                       const SizedBox(height: 24),
+
+                      // ← Error Message Widget
+                      if (_errorMessage != null) ...[
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFF4D6D).withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: const Color(0xFFFF4D6D).withOpacity(0.5),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.error_outline,
+                                color: Color(0xFFFF4D6D),
+                                size: 18,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  _errorMessage!,
+                                  style: const TextStyle(
+                                    color: Color(0xFFFF4D6D),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
 
                       // Username Field
                       TextField(

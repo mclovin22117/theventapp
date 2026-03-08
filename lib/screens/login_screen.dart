@@ -13,6 +13,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
+  String? _errorMessage; // ← Add this
 
   final AuthService _authService = AuthService();
 
@@ -23,11 +24,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
     // Validation
     if (username.isEmpty || password.isEmpty) {
-      _showMessage('Please fill in all fields');
+      setState(() => _errorMessage = 'Please fill in all fields');
       return;
     }
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null; // ← Clear error on new attempt
+    });
 
     final result = await _authService.login(
       username: username,
@@ -39,21 +43,8 @@ class _LoginScreenState extends State<LoginScreen> {
     if (result['success']) {
       if (mounted) Navigator.pushReplacementNamed(context, '/home');
     } else {
-      _showMessage(result['message']);
+      setState(() => _errorMessage = result['message']); // ← Set error
     }
-  }
-
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: const Color(0xFF2C2C2C),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-    );
   }
 
   @override
@@ -143,6 +134,47 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       const SizedBox(height: 28),
+
+                      // ← Error Message Widget
+                      if (_errorMessage != null) ...[
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFF4D6D).withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: const Color(0xFFFF4D6D).withOpacity(0.5),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.error_outline,
+                                color: Color(0xFFFF4D6D),
+                                size: 18,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  _errorMessage!,
+                                  style: const TextStyle(
+                                    color: Color(0xFFFF4D6D),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
 
                       // Username Field
                       TextField(

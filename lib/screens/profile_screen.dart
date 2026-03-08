@@ -346,7 +346,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: Column(
                       children: [
                         Text(
-                          '${_profile?['posts'] != null ? (_profile!['posts'] as List).length : 0}',
+                          '${_profile?['post_count'] ?? 0}', // ← Fixed
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 26,

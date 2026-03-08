@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'report_bug_screen.dart';
 
 class AboutScreen extends StatelessWidget {
@@ -248,6 +249,28 @@ class AboutScreen extends StatelessWidget {
                 children: [
                   _buildLinkTile(
                     context: context,
+                    icon: Icons.code,
+                    title: 'GitHub Repository',
+                    onTap: () async {
+                      final Uri githubUri = Uri.parse(
+                        'https://github.com/mclovin22117/theventapp',
+                      );
+                      if (await canLaunchUrl(githubUri)) {
+                        await launchUrl(
+                          githubUri,
+                          mode: LaunchMode.externalApplication,
+                        );
+                      }
+                    },
+                    isFirst: true,
+                    isLast: false,
+                  ),
+                  const Divider(
+                    color: Color(0xFF2C2C2C),
+                    height: 1,
+                  ),
+                  _buildLinkTile(
+                    context: context,
                     icon: Icons.bug_report_outlined,
                     title: 'Report a Bug',
                     onTap: () => Navigator.push(
@@ -256,7 +279,7 @@ class AboutScreen extends StatelessWidget {
                         builder: (context) => const ReportBugScreen(),
                       ),
                     ),
-                    isFirst: true,
+                    isFirst: false,
                     isLast: true,
                   ),
                 ],

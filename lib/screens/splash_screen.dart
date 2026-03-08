@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/auth_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -12,8 +12,6 @@ class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
-
-  final AuthService _authService = AuthService();
 
   @override
   void initState() {
@@ -35,13 +33,13 @@ class _SplashScreenState extends State<SplashScreen>
     });
   }
 
-  // Check if user is already logged in
-  Future<void> _checkSession() async {
-    final user = await _authService.getCurrentUser();
-
+  // ← Check Supabase Auth session directly
+  void _checkSession() {
     if (!mounted) return;
 
-    if (user != null) {
+    final session = Supabase.instance.client.auth.currentSession;
+
+    if (session != null) {
       Navigator.pushReplacementNamed(context, '/home');
     } else {
       Navigator.pushReplacementNamed(context, '/login');

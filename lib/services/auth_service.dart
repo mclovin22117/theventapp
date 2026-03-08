@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
   final _supabase = Supabase.instance.client;
@@ -12,11 +11,14 @@ class AuthService {
     File? profileImage,
   }) async {
     try {
-      // ← Use RPC to check if username exists (avoids direct table read)
+      // Check if username already exists
       final existingUser = await _supabase
-          .rpc('check_username_exists', params: {'p_username': username});
+          .from('users')
+          .select()
+          .eq('username', username)
+          .maybeSingle();
 
-      if (existingUser == true) {
+      if (existingUser != null) {
         return {
           'success': false,
           'message': 'Username already taken. Try another one.',
@@ -41,11 +43,22 @@ class AuthService {
             _supabase.storage.from('profiles').getPublicUrl(fileName);
       }
 
-      await _supabase.rpc('register_user', params: {
-        'p_username': username,
-        'p_password': password,
-        'p_profile_picture_url': profilePictureUrl,
-      });
+      // ← Use Supabase Auth to register
+      final authResponse = await _supabase.auth.signUp(
+        email: '$username@theventapp.com', // ← Fake email using username
+        password: password,
+        data: {
+          'username': username,
+          'profile_picture_url': profilePictureUrl,
+        },
+      );
+
+      if (authResponse.user == null) {
+        return {
+          'success': false,
+          'message': 'Registration failed. Please try again.',
+        };
+      }
 
       return {
         'success': true,
@@ -66,58 +79,74 @@ class AuthService {
     required String password,
   }) async {
     try {
-      final result = await _supabase.rpc('login_user', params: {
-        'p_username': username,
-        'p_password': password,
-      });
+      print('🔐 Attempting login for: $username');
 
-      print('LOGIN RESULT: $result');
+      final authResponse = await _supabase.auth.signInWithPassword(
+        email: '$username@theventapp.com',
+        password: password,
+      );
 
-      if (result == null || result.isEmpty) {
+      print('✅ Auth Response: ${authResponse.user}');
+
+      if (authResponse.user == null) {
         return {
           'success': false,
           'message': 'Invalid username or password.',
         };
       }
 
-      final user = result[0];
-
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('user_id', user['id'].toString());
-      await prefs.setString('username', user['username'].toString());
-      await prefs.setString(
-          'profile_picture_url', user['profile_picture_url']?.toString() ?? '');
-
       return {
         'success': true,
         'message': 'Login successful!',
-        'user': user,
+        'user': authResponse.user,
       };
-    } catch (e) {
-      print('LOGIN ERROR: $e');
+    } on AuthException catch (e) {
+      print('❌ AUTH EXCEPTION: ${e.message}'); // ← This will show exact error
       return {
         'success': false,
-        'message': 'Something went wrong. Please try again later.',
+        'message': e.message,  // ← Show exact Supabase error
+      };
+    } catch (e) {
+      print('❌ LOGIN ERROR: $e');
+      return {
+        'success': false,
+        'message': e.toString(), // ← Show exact error
       };
     }
   }
 
   // Logout user
   Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
+    await _supabase.auth.signOut();
   }
 
   // Get current logged in user
   Future<Map<String, dynamic>?> getCurrentUser() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getString('user_id');
-    if (userId == null) return null;
+    try {
+      final authUser = _supabase.auth.currentUser;
+      if (authUser == null) return null;
 
-    return {
-      'user_id': userId,
-      'username': prefs.getString('username'),
-      'profile_picture_url': prefs.getString('profile_picture_url'),
-    };
+      // ← Fetch user profile from users table using auth_id
+      final profile = await _supabase
+          .from('users')
+          .select()
+          .eq('auth_id', authUser.id)
+          .single();
+
+      return {
+        'user_id': profile['id'],
+        'auth_id': authUser.id,
+        'username': profile['username'],
+        'profile_picture_url': profile['profile_picture_url'] ?? '',
+      };
+    } catch (e) {
+      print('GET CURRENT USER ERROR: $e');
+      return null;
+    }
+  }
+
+  // Check if user is logged in
+  bool isLoggedIn() {
+    return _supabase.auth.currentUser != null;
   }
 }

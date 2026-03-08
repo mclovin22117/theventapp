@@ -1,31 +1,41 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/post_model.dart';
 import '../models/reply_model.dart';
 
 class PostService {
   final _supabase = Supabase.instance.client;
 
+  // Get current user's id from users table
+  Future<String?> _getCurrentUserId() async {
+    try {
+      final authUser = _supabase.auth.currentUser;
+      if (authUser == null) return null;
+
+      final profile = await _supabase
+          .from('users')
+          .select('id')
+          .eq('auth_id', authUser.id)
+          .single();
+
+      return profile['id'] as String;
+    } catch (e) {
+      return null;
+    }
+  }
+
   // Fetch all posts with like status
   Future<List<PostModel>> getPosts() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final currentUserId = prefs.getString('user_id');
-
-      print('FETCHING POSTS... user_id: $currentUserId'); // ← Add this
+      final currentUserId = await _getCurrentUserId();
 
       final response = await _supabase
           .from('posts')
           .select('*, users(username, profile_picture_url)')
           .order('created_at', ascending: false);
 
-      print('POSTS RESPONSE: $response'); // ← Add this
-
       final posts = (response as List)
           .map((post) => PostModel.fromMap(post))
           .toList();
-
-      print('POSTS COUNT: ${posts.length}'); // ← Add this
 
       // Check which posts current user has liked
       if (currentUserId != null) {
@@ -45,7 +55,7 @@ class PostService {
 
       return posts;
     } catch (e) {
-      print('GET POSTS ERROR: $e'); // ← Add this
+      print('GET POSTS ERROR: $e');
       return [];
     }
   }
@@ -55,8 +65,7 @@ class PostService {
     required String content,
   }) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getString('user_id');
+      final userId = await _getCurrentUserId();
 
       if (userId == null) {
         return {
@@ -82,15 +91,12 @@ class PostService {
     }
   }
 
-  // Toggle like — strictly one like per user per post
+  // Toggle like
   Future<bool> toggleLike(PostModel post) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getString('user_id');
-
+      final userId = await _getCurrentUserId();
       if (userId == null) return post.isLiked;
 
-      // Always check actual DB state first
       final existingLike = await _supabase
           .from('likes')
           .select()
@@ -99,14 +105,12 @@ class PostService {
           .maybeSingle();
 
       if (existingLike != null) {
-        // Already liked → Unlike
         await _supabase
             .from('likes')
             .delete()
             .eq('post_id', post.id)
             .eq('user_id', userId);
 
-        // Get real count from DB
         final countResponse = await _supabase
             .from('likes')
             .select()
@@ -118,15 +122,13 @@ class PostService {
             .from('posts')
             .update({'likes_count': realCount}).eq('id', post.id);
 
-        return false; // not liked
+        return false;
       } else {
-        // Not liked yet → Like
         await _supabase.from('likes').insert({
           'post_id': post.id,
           'user_id': userId,
         });
 
-        // Get real count from DB
         final countResponse = await _supabase
             .from('likes')
             .select()
@@ -138,7 +140,7 @@ class PostService {
             .from('posts')
             .update({'likes_count': realCount}).eq('id', post.id);
 
-        return true; // liked
+        return true;
       }
     } catch (e) {
       return post.isLiked;
@@ -168,8 +170,7 @@ class PostService {
     required String content,
   }) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getString('user_id');
+      final userId = await _getCurrentUserId();
 
       if (userId == null) {
         return {

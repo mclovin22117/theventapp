@@ -1,3 +1,5 @@
+# Project will undergo switch from SUPABASE to Firebase due to Indian government's recent It law changes.
+## The app/web won't work for now. 
 <div align="center">
   <img src="assets/images/logo.png" alt="TheVent Logo" width="100" height="100" />
   <h1>TheVent</h1>

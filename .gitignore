@@ -1,5 +1,8 @@
-# Supabase credentials - NEVER push this
+# Credentials - NEVER push these
 lib/supabase_config.dart
+lib/firebase_options.dart
+android/app/google-services.json
+firebase.json
 
 # Flutter/Dart
 **/doc/api/
@@ -38,14 +41,5 @@ build/
 .DS_Store
 Thumbs.db
 
-# Flutter metadata - auto generated
+# Flutter metadata
 .metadata
-
-# google-service
-android/app/google-services.json
-firebase.json
-
-# Firebase configuration - auto generated
-firebase.jsonlib/firebase_options.dart
-lib/firebase_options.dart
-lib/firebase_options.dart

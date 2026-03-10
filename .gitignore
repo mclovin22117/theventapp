@@ -43,6 +43,7 @@ Thumbs.db
 
 # google-service
 android/app/google-services.json
+firebase.json
 
 # Firebase configuration - auto generated
 firebase.jsonlib/firebase_options.dart

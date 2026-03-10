@@ -40,3 +40,6 @@ Thumbs.db
 
 # Flutter metadata - auto generated
 .metadata
+
+# google-service
+android/app/google-services.json

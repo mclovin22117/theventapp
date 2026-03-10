@@ -2,6 +2,7 @@ plugins {
     id("com.android.application")
     id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
+    id("com.google.gms.google-services") // ← Add this
 }
 
 android {
@@ -20,7 +21,7 @@ android {
 
     defaultConfig {
         applicationId = "com.theventapp.theventapp"
-        minSdk = flutter.minSdkVersion
+        minSdk = 21 // ← Update to 21 (Firebase requirement)
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -29,9 +30,9 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("debug")
-            isMinifyEnabled = true          // ← Add this
-            isShrinkResources = true        // ← Add this
-            proguardFiles(                  // ← Add this block
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )

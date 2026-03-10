@@ -10,8 +10,11 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Supabase
-  supabase_flutter: ^2.8.4
+  # Firebase
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.1
+  cloud_firestore: ^5.4.4
+  firebase_storage: ^12.3.2
 
   # Navigation
   go_router: ^14.6.2
@@ -19,11 +22,8 @@ dependencies:
   # Image Picker
   image_picker: ^1.1.2
 
-  # Storing session locally
-  shared_preferences: ^2.3.3
-
   # URL Launcher
-  url_launcher: ^6.3.0  # ← Moved here
+  url_launcher: ^6.3.0
 
   # Icons
   cupertino_icons: ^1.0.8
@@ -49,4 +49,3 @@ flutter_launcher_icons:
     image_path: "assets/images/logo.png"
   windows:
     generate: true
-    image_path: "assets/images/logo.png"

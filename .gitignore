@@ -43,3 +43,6 @@ Thumbs.db
 
 # google-service
 android/app/google-services.json
+
+# Firebase configuration - auto generated
+firebase.json

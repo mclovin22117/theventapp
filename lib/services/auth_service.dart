@@ -97,10 +97,10 @@ class AuthService {
         'success': false,
         'message': 'Invalid username or password.',
       };
-    } catch (_) {
+    } catch (e) {
       return {
         'success': false,
-        'message': 'Something went wrong. Please try again later.',
+        'message': e.toString(),
       };
     }
   }

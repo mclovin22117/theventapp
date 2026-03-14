@@ -1,8 +1,15 @@
 import 'dart:io';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 class AuthService {
-  final _supabase = Supabase.instance.client;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
+
+  String _emailFromUsername(String username) =>
+      '${username.trim().toLowerCase()}@theventapp.app';
 
   // Register new user
   Future<Map<String, dynamic>> register({
@@ -11,61 +18,57 @@ class AuthService {
     File? profileImage,
   }) async {
     try {
-      // Check if username already exists
-      final existingUser = await _supabase
-          .from('users')
-          .select()
-          .eq('username', username)
-          .maybeSingle();
+      final cleanUsername = username.trim();
+      final usernameLower = cleanUsername.toLowerCase();
 
-      if (existingUser != null) {
+      // Check duplicate username
+      final existing = await _db
+          .collection('users')
+          .where('usernameLower', isEqualTo: usernameLower)
+          .limit(1)
+          .get();
+
+      if (existing.docs.isNotEmpty) {
         return {
           'success': false,
           'message': 'Username already taken. Try another one.',
         };
       }
 
-      String? profilePictureUrl;
-      if (profileImage != null) {
-        final fileName =
-            '${username}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-
-        await _supabase.storage.from('profiles').upload(
-              fileName,
-              profileImage,
-              fileOptions: const FileOptions(
-                contentType: 'image/jpeg',
-                upsert: true,
-              ),
-            );
-
-        profilePictureUrl =
-            _supabase.storage.from('profiles').getPublicUrl(fileName);
-      }
-
-      // ← Use Supabase Auth to register
-      final authResponse = await _supabase.auth.signUp(
-        email: '$username@theventapp.com', // ← Fake email using username
+      final cred = await _auth.createUserWithEmailAndPassword(
+        email: _emailFromUsername(cleanUsername),
         password: password,
-        data: {
-          'username': username,
-          'profile_picture_url': profilePictureUrl,
-        },
       );
 
-      if (authResponse.user == null) {
-        return {
-          'success': false,
-          'message': 'Registration failed. Please try again.',
-        };
+      final uid = cred.user!.uid;
+
+      String? profilePictureUrl;
+      if (profileImage != null) {
+        final ref = _storage.ref('profiles/$uid/profile.jpg');
+        await ref.putFile(profileImage);
+        profilePictureUrl = await ref.getDownloadURL();
       }
+
+      await _db.collection('users').doc(uid).set({
+        'uid': uid,
+        'username': cleanUsername,
+        'usernameLower': usernameLower,
+        'profile_picture_url': profilePictureUrl,
+        'created_at': FieldValue.serverTimestamp(),
+      });
+
+      await cred.user!.updateDisplayName(cleanUsername);
 
       return {
         'success': true,
         'message': 'Account created successfully!',
       };
-    } catch (e) {
-      print('REGISTER ERROR: $e');
+    } on FirebaseAuthException catch (e) {
+      return {
+        'success': false,
+        'message': e.message ?? 'Registration failed.',
+      };
+    } catch (_) {
       return {
         'success': false,
         'message': 'Something went wrong. Please try again later.',
@@ -79,74 +82,53 @@ class AuthService {
     required String password,
   }) async {
     try {
-      print('🔐 Attempting login for: $username');
-
-      final authResponse = await _supabase.auth.signInWithPassword(
-        email: '$username@theventapp.com',
+      final cred = await _auth.signInWithEmailAndPassword(
+        email: _emailFromUsername(username),
         password: password,
       );
-
-      print('✅ Auth Response: ${authResponse.user}');
-
-      if (authResponse.user == null) {
-        return {
-          'success': false,
-          'message': 'Invalid username or password.',
-        };
-      }
 
       return {
         'success': true,
         'message': 'Login successful!',
-        'user': authResponse.user,
+        'user': cred.user,
       };
-    } on AuthException catch (e) {
-      print('❌ AUTH EXCEPTION: ${e.message}'); // ← This will show exact error
+    } on FirebaseAuthException {
       return {
         'success': false,
-        'message': e.message,  // ← Show exact Supabase error
+        'message': 'Invalid username or password.',
       };
-    } catch (e) {
-      print('❌ LOGIN ERROR: $e');
+    } catch (_) {
       return {
         'success': false,
-        'message': e.toString(), // ← Show exact error
+        'message': 'Something went wrong. Please try again later.',
       };
     }
   }
 
   // Logout user
   Future<void> logout() async {
-    await _supabase.auth.signOut();
+    await _auth.signOut();
   }
 
-  // Get current logged in user
+  // Get current logged in user profile
   Future<Map<String, dynamic>?> getCurrentUser() async {
     try {
-      final authUser = _supabase.auth.currentUser;
-      if (authUser == null) return null;
+      final user = _auth.currentUser;
+      if (user == null) return null;
 
-      // ← Fetch user profile from users table using auth_id
-      final profile = await _supabase
-          .from('users')
-          .select()
-          .eq('auth_id', authUser.id)
-          .single();
+      final doc = await _db.collection('users').doc(user.uid).get();
+      final data = doc.data();
+      if (data == null) return null;
 
       return {
-        'user_id': profile['id'],
-        'auth_id': authUser.id,
-        'username': profile['username'],
-        'profile_picture_url': profile['profile_picture_url'] ?? '',
+        'user_id': user.uid,
+        'username': data['username'],
+        'profile_picture_url': data['profile_picture_url'] ?? '',
       };
-    } catch (e) {
-      print('GET CURRENT USER ERROR: $e');
+    } catch (_) {
       return null;
     }
   }
 
-  // Check if user is logged in
-  bool isLoggedIn() {
-    return _supabase.auth.currentUser != null;
-  }
+  bool isLoggedIn() => _auth.currentUser != null;
 }

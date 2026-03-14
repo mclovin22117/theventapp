@@ -1,35 +1,36 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ProfileService {
-  final _supabase = Supabase.instance.client;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
   final _imagePicker = ImagePicker();
 
   // Get current user profile
   Future<Map<String, dynamic>?> getProfile() async {
     try {
-      // ← Use Supabase Auth session instead of SharedPreferences
-      final authUser = _supabase.auth.currentUser;
-      if (authUser == null) return null;
+      final user = _auth.currentUser;
+      if (user == null) return null;
 
-      final response = await _supabase
-          .from('users')
-          .select('*, posts(count)')
-          .eq('auth_id', authUser.id) // ← Use auth_id instead of id
-          .single();
+      final userDoc = await _db.collection('users').doc(user.uid).get();
+      final data = userDoc.data();
+      if (data == null) return null;
 
-      final postCount = (response['posts'] as List).isNotEmpty
-          ? response['posts'][0]['count'] ?? 0
-          : 0;
+      final postsSnap = await _db
+          .collection('posts')
+          .where('user_id', isEqualTo: user.uid)
+          .get();
 
       return {
-        ...response,
-        'post_count': postCount,
+        ...data,
+        'id': user.uid,
+        'post_count': postsSnap.docs.length,
       };
-    } catch (e) {
-      print('GET PROFILE ERROR: $e');
+    } catch (_) {
       return null;
     }
   }
@@ -52,42 +53,21 @@ class ProfileService {
   // Upload profile picture to Supabase Storage
   Future<Map<String, dynamic>> uploadProfilePicture(XFile image) async {
     try {
-      // ← Use Supabase Auth session instead of SharedPreferences
-      final authUser = _supabase.auth.currentUser;
-      if (authUser == null) {
+      final user = _auth.currentUser;
+      if (user == null) {
         return {'success': false, 'message': 'Not logged in'};
       }
 
-      // Get user id from users table
-      final userProfile = await _supabase
-          .from('users')
-          .select('id')
-          .eq('auth_id', authUser.id)
-          .single();
+      final ref = _storage.ref('profiles/${user.uid}/profile.jpg');
+      await ref.putFile(File(image.path));
+      final publicUrl = await ref.getDownloadURL();
 
-      final userId = userProfile['id'];
-      final fileName = '$userId/profile.jpg';
-      final bytes = await image.readAsBytes();
-
-      await _supabase.storage.from('avatars').uploadBinary(
-            fileName,
-            bytes,
-            fileOptions: const FileOptions(
-              upsert: true,
-              contentType: 'image/jpeg',
-            ),
-          );
-
-      final publicUrl =
-          _supabase.storage.from('avatars').getPublicUrl(fileName);
-
-      await _supabase.from('users').update({
-        'profile_picture_url':
-            '$publicUrl?t=${DateTime.now().millisecondsSinceEpoch}',
-      }).eq('auth_id', authUser.id); // ← Use auth_id
+      await _db.collection('users').doc(user.uid).set({
+        'profile_picture_url': publicUrl,
+      }, SetOptions(merge: true));
 
       return {'success': true, 'url': publicUrl};
-    } catch (e) {
+    } catch (_) {
       return {'success': false, 'message': 'Failed to upload image'};
     }
   }
@@ -95,35 +75,26 @@ class ProfileService {
   // Remove profile picture
   Future<Map<String, dynamic>> removeProfilePicture() async {
     try {
-      // ← Use Supabase Auth session instead of SharedPreferences
-      final authUser = _supabase.auth.currentUser;
-      if (authUser == null) {
+      final user = _auth.currentUser;
+      if (user == null) {
         return {'success': false, 'message': 'Not logged in'};
       }
 
-      final userProfile = await _supabase
-          .from('users')
-          .select('id')
-          .eq('auth_id', authUser.id)
-          .single();
+      final ref = _storage.ref('profiles/${user.uid}/profile.jpg');
+      await ref.delete().catchError((_) {});
 
-      final userId = userProfile['id'];
-      final fileName = '$userId/profile.jpg';
-
-      await _supabase.storage.from('avatars').remove([fileName]);
-
-      await _supabase.from('users').update({
+      await _db.collection('users').doc(user.uid).set({
         'profile_picture_url': null,
-      }).eq('auth_id', authUser.id); // ← Use auth_id
+      }, SetOptions(merge: true));
 
       return {'success': true};
-    } catch (e) {
+    } catch (_) {
       return {'success': false, 'message': 'Failed to remove image'};
     }
   }
 
   // Logout
   Future<void> logout() async {
-    await _supabase.auth.signOut(); // ← Only Supabase Auth signout needed
+    await _auth.signOut();
   }
 }

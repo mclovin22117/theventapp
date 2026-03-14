@@ -21,7 +21,7 @@ android {
 
     defaultConfig {
         applicationId = "com.theventapp.theventapp"
-        minSdk = 21 // ← Update to 21 (Firebase requirement)
+        minSdk = flutter.minSdkVersion // ← Update to 21 (Firebase requirement)
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

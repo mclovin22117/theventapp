@@ -1,198 +1,198 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/post_model.dart';
 import '../models/reply_model.dart';
 
 class PostService {
-  final _supabase = Supabase.instance.client;
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Get current user's id from users table
-  Future<String?> _getCurrentUserId() async {
-    try {
-      final authUser = _supabase.auth.currentUser;
-      if (authUser == null) return null;
+  Future<String?> _getCurrentUserId() async => _auth.currentUser?.uid;
 
-      final profile = await _supabase
-          .from('users')
-          .select('id')
-          .eq('auth_id', authUser.id)
-          .single();
+  Future<Map<String, dynamic>?> _getCurrentUserProfile() async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return null;
 
-      return profile['id'] as String;
-    } catch (e) {
-      return null;
-    }
+    final doc = await _db.collection('users').doc(uid).get();
+    return doc.data();
   }
 
-  // Fetch all posts with like status
   Future<List<PostModel>> getPosts() async {
     try {
       final currentUserId = await _getCurrentUserId();
 
-      final response = await _supabase
-          .from('posts')
-          .select('*, users(username, profile_picture_url)')
-          .order('created_at', ascending: false);
+      final snapshot = await _db
+          .collection('posts')
+          .orderBy('created_at', descending: true)
+          .get();
 
-      final posts = (response as List)
-          .map((post) => PostModel.fromMap(post))
-          .toList();
+      final posts = <PostModel>[];
 
-      // Check which posts current user has liked
-      if (currentUserId != null) {
-        final likes = await _supabase
-            .from('likes')
-            .select('post_id')
-            .eq('user_id', currentUserId);
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
 
-        final likedPostIds = (likes as List)
-            .map((like) => like['post_id'] as String)
-            .toSet();
-
-        for (var post in posts) {
-          post.isLiked = likedPostIds.contains(post.id);
+        bool isLiked = false;
+        if (currentUserId != null) {
+          final likeDoc = await _db
+              .collection('posts')
+              .doc(doc.id)
+              .collection('likes')
+              .doc(currentUserId)
+              .get();
+          isLiked = likeDoc.exists;
         }
+
+        final createdAt = data['created_at'] is Timestamp
+            ? (data['created_at'] as Timestamp).toDate().toIso8601String()
+            : DateTime.now().toIso8601String();
+
+        posts.add(
+          PostModel.fromMap({
+            'id': doc.id,
+            'content': data['content'] ?? '',
+            'user_id': data['user_id'] ?? '',
+            'likes_count': data['likes_count'] ?? 0,
+            'created_at': createdAt,
+            'users': {
+              'username': data['username'] ?? 'Unknown',
+              'profile_picture_url': data['profile_picture_url'],
+            },
+            'is_liked': isLiked,
+          }),
+        );
       }
 
       return posts;
-    } catch (e) {
-      print('GET POSTS ERROR: $e');
+    } catch (_) {
       return [];
     }
   }
 
-  // Create a new post
   Future<Map<String, dynamic>> createPost({
     required String content,
   }) async {
     try {
-      final userId = await _getCurrentUserId();
-
-      if (userId == null) {
-        return {
-          'success': false,
-          'message': 'You must be logged in to post.',
-        };
+      final uid = await _getCurrentUserId();
+      if (uid == null) {
+        return {'success': false, 'message': 'You must be logged in to post.'};
       }
 
-      await _supabase.from('posts').insert({
-        'user_id': userId,
+      final profile = await _getCurrentUserProfile();
+      if (profile == null) {
+        return {'success': false, 'message': 'User profile not found.'};
+      }
+
+      await _db.collection('posts').add({
+        'user_id': uid,
+        'username': profile['username'] ?? 'Unknown',
+        'profile_picture_url': profile['profile_picture_url'],
         'content': content,
+        'likes_count': 0,
+        'created_at': FieldValue.serverTimestamp(),
       });
 
-      return {
-        'success': true,
-        'message': 'Vent posted successfully!',
-      };
-    } catch (e) {
+      return {'success': true, 'message': 'Vent posted successfully!'};
+    } catch (_) {
       return {
         'success': false,
-        'message': 'Something went wrong. Please try again.',
+        'message': 'Something went wrong. Please try again.'
       };
     }
   }
 
-  // Toggle like
   Future<bool> toggleLike(PostModel post) async {
     try {
-      final userId = await _getCurrentUserId();
-      if (userId == null) return post.isLiked;
+      final uid = await _getCurrentUserId();
+      if (uid == null) return post.isLiked;
 
-      final existingLike = await _supabase
-          .from('likes')
-          .select()
-          .eq('post_id', post.id)
-          .eq('user_id', userId)
-          .maybeSingle();
+      final postRef = _db.collection('posts').doc(post.id);
+      final likeRef = postRef.collection('likes').doc(uid);
 
-      if (existingLike != null) {
-        await _supabase
-            .from('likes')
-            .delete()
-            .eq('post_id', post.id)
-            .eq('user_id', userId);
+      await _db.runTransaction((tx) async {
+        final likeSnap = await tx.get(likeRef);
+        final postSnap = await tx.get(postRef);
 
-        final countResponse = await _supabase
-            .from('likes')
-            .select()
-            .eq('post_id', post.id);
+        final currentLikes = (postSnap.data()?['likes_count'] ?? 0) as int;
 
-        final realCount = (countResponse as List).length;
+        if (likeSnap.exists) {
+          tx.delete(likeRef);
+          tx.update(postRef, {'likes_count': (currentLikes - 1).clamp(0, 1 << 30)});
+        } else {
+          tx.set(likeRef, {
+            'user_id': uid,
+            'created_at': FieldValue.serverTimestamp(),
+          });
+          tx.update(postRef, {'likes_count': currentLikes + 1});
+        }
+      });
 
-        await _supabase
-            .from('posts')
-            .update({'likes_count': realCount}).eq('id', post.id);
-
-        return false;
-      } else {
-        await _supabase.from('likes').insert({
-          'post_id': post.id,
-          'user_id': userId,
-        });
-
-        final countResponse = await _supabase
-            .from('likes')
-            .select()
-            .eq('post_id', post.id);
-
-        final realCount = (countResponse as List).length;
-
-        await _supabase
-            .from('posts')
-            .update({'likes_count': realCount}).eq('id', post.id);
-
-        return true;
-      }
-    } catch (e) {
+      return !post.isLiked;
+    } catch (_) {
       return post.isLiked;
     }
   }
 
-  // Get replies for a post
   Future<List<ReplyModel>> getReplies(String postId) async {
     try {
-      final response = await _supabase
-          .from('replies')
-          .select('*, users(username, profile_picture_url)')
-          .eq('post_id', postId)
-          .order('created_at', ascending: true);
+      final snapshot = await _db
+          .collection('posts')
+          .doc(postId)
+          .collection('replies')
+          .orderBy('created_at', descending: false)
+          .get();
 
-      return (response as List)
-          .map((reply) => ReplyModel.fromMap(reply))
-          .toList();
-    } catch (e) {
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+
+        final createdAt = data['created_at'] is Timestamp
+            ? (data['created_at'] as Timestamp).toDate().toIso8601String()
+            : DateTime.now().toIso8601String();
+
+        return ReplyModel.fromMap({
+          'id': doc.id,
+          'post_id': postId,
+          'user_id': data['user_id'] ?? '',
+          'content': data['content'] ?? '',
+          'created_at': createdAt,
+          'users': {
+            'username': data['username'] ?? 'Unknown',
+            'profile_picture_url': data['profile_picture_url'],
+          },
+        });
+      }).toList();
+    } catch (_) {
       return [];
     }
   }
 
-  // Add a reply to a post
   Future<Map<String, dynamic>> addReply({
     required String postId,
     required String content,
   }) async {
     try {
-      final userId = await _getCurrentUserId();
-
-      if (userId == null) {
-        return {
-          'success': false,
-          'message': 'You must be logged in to reply.',
-        };
+      final uid = await _getCurrentUserId();
+      if (uid == null) {
+        return {'success': false, 'message': 'You must be logged in to reply.'};
       }
 
-      await _supabase.from('replies').insert({
-        'post_id': postId,
-        'user_id': userId,
+      final profile = await _getCurrentUserProfile();
+      if (profile == null) {
+        return {'success': false, 'message': 'User profile not found.'};
+      }
+
+      await _db.collection('posts').doc(postId).collection('replies').add({
+        'user_id': uid,
+        'username': profile['username'] ?? 'Unknown',
+        'profile_picture_url': profile['profile_picture_url'],
         'content': content,
+        'created_at': FieldValue.serverTimestamp(),
       });
 
-      return {
-        'success': true,
-        'message': 'Reply added!',
-      };
-    } catch (e) {
+      return {'success': true, 'message': 'Reply added!'};
+    } catch (_) {
       return {
         'success': false,
-        'message': 'Something went wrong. Please try again.',
+        'message': 'Something went wrong. Please try again.'
       };
     }
   }

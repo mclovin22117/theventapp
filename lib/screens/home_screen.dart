@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/post_model.dart';
 import '../services/post_service.dart';
 
@@ -12,35 +11,17 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final PostService _postService = PostService();
-  final _supabase = Supabase.instance.client;
   List<PostModel> _posts = [];
   bool _isLoading = true;
-  RealtimeChannel? _postsChannel;
 
   @override
   void initState() {
     super.initState();
     _loadPosts();
-    _subscribeToPostsChannel();
-  }
-
-  void _subscribeToPostsChannel() {
-    _postsChannel = _supabase
-        .channel('public:posts')
-        .onPostgresChanges(
-          event: PostgresChangeEvent.all,
-          schema: 'public',
-          table: 'posts',
-          callback: (payload) {
-            _loadPosts(); // ← Auto refresh when posts change
-          },
-        )
-        .subscribe();
   }
 
   @override
   void dispose() {
-    _postsChannel?.unsubscribe(); // ← Cleanup subscription
     super.dispose();
   }
 

@@ -226,8 +226,9 @@ class AboutScreen extends StatelessWidget {
                     children: [
                       _buildTechBadge('Flutter'),
                       _buildTechBadge('Dart'),
-                      _buildTechBadge('Supabase'),
-                      _buildTechBadge('PostgreSQL'),
+                      _buildTechBadge('Firebase Auth'),
+                      _buildTechBadge('Firestore'),
+                      _buildTechBadge('Firebase Storage'),
                     ],
                   ),
                 ],

@@ -56,50 +56,53 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+
     return Scaffold(
       backgroundColor: const Color(0xFF0D0D0D),
       body: SafeArea(
         child: Column(
           children: [
             // Top Section - Logo
-            Expanded(
-              flex: 2,
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Image.asset(
-                      'assets/images/logo.png',
-                      width: 100,
-                      height: 100,
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'TheVent',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 2.0,
+            if (!isKeyboardOpen)
+              Expanded(
+                flex: 2,
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Image.asset(
+                        'assets/images/logo.png',
+                        width: 100,
+                        height: 100,
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Speak freely. Anonymously.',
-                      style: TextStyle(
-                        color: Color(0xFF9E9E9E),
-                        fontSize: 13,
-                        letterSpacing: 1.0,
+                      const SizedBox(height: 16),
+                      const Text(
+                        'TheVent',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 2.0,
+                        ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Speak freely. Anonymously.',
+                        style: TextStyle(
+                          color: Color(0xFF9E9E9E),
+                          fontSize: 13,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
 
             // Bottom Section - Form
             Expanded(
-              flex: 3,
+              flex: isKeyboardOpen ? 1 : 3,
               child: Container(
                 width: double.infinity,
                 decoration: const BoxDecoration(

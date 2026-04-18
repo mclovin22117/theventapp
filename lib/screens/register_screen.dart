@@ -95,50 +95,53 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+
     return Scaffold(
       backgroundColor: const Color(0xFF0D0D0D),
       body: SafeArea(
         child: Column(
           children: [
             // Top Section - Logo
-            Expanded(
-              flex: 2,
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Image.asset(
-                      'assets/images/logo.png',
-                      width: 80,
-                      height: 80,
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'TheVent',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 2.0,
+            if (!isKeyboardOpen)
+              Expanded(
+                flex: 2,
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Image.asset(
+                        'assets/images/logo.png',
+                        width: 80,
+                        height: 80,
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      'Create your anonymous account',
-                      style: TextStyle(
-                        color: Color(0xFF9E9E9E),
-                        fontSize: 13,
-                        letterSpacing: 1.0,
+                      const SizedBox(height: 12),
+                      const Text(
+                        'TheVent',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 2.0,
+                        ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Create your anonymous account',
+                        style: TextStyle(
+                          color: Color(0xFF9E9E9E),
+                          fontSize: 13,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
 
             // Bottom Section - Form
             Expanded(
-              flex: 4,
+              flex: isKeyboardOpen ? 1 : 4,
               child: Container(
                 width: double.infinity,
                 decoration: const BoxDecoration(

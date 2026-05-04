@@ -98,7 +98,6 @@ flutter build web
 
 ## Important Notes
 
-- This project has migrated from Supabase to Firebase.
 - If `firebase_options.dart` or `google-services.json` keys are rotated, rerun `flutterfire configure` and rebuild.
 - Profile picture upload requires Firebase Storage to be available for your selected Firebase project region.
 

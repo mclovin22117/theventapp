@@ -15,7 +15,6 @@ import 'models/post_model.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ← Initialize Firebase instead of Supabase
   if (kIsWeb) {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,

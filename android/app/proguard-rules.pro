@@ -2,8 +2,7 @@
 -keep class io.flutter.** { *; }
 -keep class io.flutter.plugins.** { *; }
 
-# Supabase / Kotlin / OkHttp
--keep class io.github.jan.supabase.** { *; }
+# Kotlin / OkHttp
 -keep class kotlin.** { *; }
 -keep class kotlinx.** { *; }
 -dontwarn kotlin.**

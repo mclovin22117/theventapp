@@ -5,6 +5,13 @@ plugins {
     id("com.google.gms.google-services") // ← Add this
 }
 
+// Load signing properties if available
+val keyProperties = java.util.Properties()
+val keyPropertiesFile = rootProject.file("key.properties")
+if (keyPropertiesFile.exists()) {
+    keyProperties.load(java.io.FileInputStream(keyPropertiesFile))
+}
+
 android {
     namespace = "com.theventapp.theventapp"
     compileSdk = flutter.compileSdkVersion
@@ -27,9 +34,26 @@ android {
         versionName = flutter.versionName
     }
 
+    // Configure signing if key.properties exists
+    signingConfigs {
+        if (keyProperties.isNotEmpty()) {
+            create("release") {
+                keyAlias = keyProperties["keyAlias"] as String
+                keyPassword = keyProperties["keyPassword"] as String
+                storeFile = file(keyProperties["storeFile"] as String)
+                storePassword = keyProperties["storePassword"] as String
+            }
+        }
+    }
+
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("debug")
+            // Use release signing config if available, otherwise use debug
+            signingConfig = if (keyProperties.isNotEmpty()) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(

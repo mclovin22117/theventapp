@@ -50,7 +50,7 @@ class ProfileService {
     }
   }
 
-  // Upload profile picture to Supabase Storage
+  // Upload profile picture to Firebase Storage
   Future<Map<String, dynamic>> uploadProfilePicture(XFile image) async {
     try {
       final user = _auth.currentUser;

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -12,6 +13,7 @@ class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _fadeAnimation;
+  late Timer _sessionCheckTimer;
 
   @override
   void initState() {
@@ -28,7 +30,11 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller.forward();
 
-    Future.delayed(const Duration(seconds: 3), _checkSession);
+    // Use Timer instead of Future.delayed so it can be cancelled
+    _sessionCheckTimer = Timer(
+      const Duration(seconds: 3),
+      _checkSession,
+    );
   }
 
   void _checkSession() {
@@ -44,6 +50,8 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   void dispose() {
+    // Cancel the timer to prevent navigation after widget is disposed
+    _sessionCheckTimer.cancel();
     _controller.dispose();
     super.dispose();
   }
